@@ -104,7 +104,39 @@ which owns the element during the transition.
 - The categories and assignees the board colours by were already in the task
   titles. Looking at the real data beat designing a tagging system.
 
-## 8. Open question I could not settle
+## 8. A silent no-op in my own tooling
+
+I patch files with Python `str.replace`, asserting the target exists first. In
+one batch I forgot the assert:
+
+    s = s.replace("var PALETTE = [...]", "...'sand']", 1)   # no assert
+
+The file said `const PALETTE`, not `var`, so the replace matched nothing and
+changed nothing — silently. It only surfaced later when I happened to read the
+file for another reason, and only did not cause a bug because every list in
+`CONFIG.LISTS` names its colour explicitly and never falls back to `PALETTE`.
+
+**Lesson.** A search-and-replace that matches nothing is indistinguishable from
+one that worked, unless you check. Assert on every single one; the one you skip
+is the one that misses.
+
+## 9. Working from memory instead of the documentation
+
+The largest one. I built against the Google Tasks API from recall, because
+`developers.google.com` is unreachable from this sandbox, and wrote
+"verify this before committing to it" in a few places rather than stopping.
+
+That is backwards. Unverifiable and unverified are different: the first is a
+reason to stop and ask, the second is a decision to guess. Concretely I guessed
+at `maxResults` defaults, at whether `Tasks.move` accepts a
+`destinationTasklist`, and — most dangerous, because it fails at runtime rather
+than in review — at the argument order of the Apps Script advanced service
+(`Tasks.Tasks.patch(resource, tasklist, task)`).
+
+**Lesson.** Never build against an API from memory. If the docs cannot be
+reached, say so and ask for them before writing the code, not after.
+
+## 10. Open question I could not settle
 
 `Tasks.move` with a `destinationTasklist` should move a task between lists
 while keeping its identity, and therefore its Gmail link. I could not reach

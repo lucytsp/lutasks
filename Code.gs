@@ -1,44 +1,9 @@
 /**
- * Lutasks - a colour-coded board for Google Tasks.
- * Apps Script backend. Serves index.html and proxies the Tasks API.
+ * Task Wall — Apps Script backend.
+ *
+ * Serves index.html and proxies the Google Tasks API. Settings live in
+ * Config.gs; this file is the plumbing.
  */
-
-const CONFIG = {
-  // Lists shown on the board, in order. Leave empty to show every list.
-  // The colour key must be one of the eight in PALETTE below.
-  LISTS: [
-    { title: 'UNSORTED',          colour: 'sand'   },
-    { title: 'JOBSMAN BUGS',      colour: 'rose'   },
-    { title: 'JOBSMAN TODO',      colour: 'indigo' },
-    { title: 'TODAY',             colour: 'green'  },
-    { title: 'Proposals TODO',    colour: 'amber'  },
-    { title: 'sysadmin todo',     colour: 'teal'   },
-    { title: 'DB / appsheet todo', colour: 'violet' },
-    { title: 'clawd',             colour: 'cyan'   },
-    { title: 'SHELVED',           colour: 'slate'  }
-  ],
-
-  // List that the "Report a bug" form writes into. Created if missing.
-  INTAKE_LIST: 'UNSORTED',
-
-  // Today's shortlist. "Send to Today" moves a task here and back out again.
-  TODAY_LIST: 'TODAY',
-
-  // Colleagues who may reorder tasks and leave comments. Everyone else gets
-  // a read-and-add board. Match on full email address.
-  SENIORS: [
-    'lucy@tspartners.co.uk'
-  ],
-
-  // Names recognised in a trailing "(...)" and shown as an assignee chip.
-  // Anything unrecognised renders as a plain note chip instead.
-  PEOPLE: [
-    'emma', 'muneeb', 'chris', 'peter', 'lyndsey', 'matt', 'naveed',
-    'rubab', 'shehzad', 'tami', 'briony', 'walled', 'joe welch', 'lucy'
-  ]
-};
-
-const PALETTE = ['rose', 'indigo', 'slate', 'teal', 'amber', 'green', 'violet', 'cyan'];
 
 /** Serve the page. */
 function doGet() {

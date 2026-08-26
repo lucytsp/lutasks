@@ -6,7 +6,7 @@
 <title>Task Wall</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;450;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;450;500;600&family=Instrument+Sans:wght@400;500;600&family=Instrument+Serif&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Public+Sans:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600&display=swap">
 <style>
 /* ---------- tokens ---------------------------------------------------- */
 :root{
@@ -31,6 +31,38 @@
   --t-sand-bg:#f0eae0;   --t-sand-bd:#dbcbb4;   --t-sand-chip:#e6dbc9;
 
   --gap:16px; --row:4px; --radius:9px;
+
+  /* Ledger — a text serif over a plain sans. The default: it reads like a
+     memo rather than like a product. */
+  --font-display:"Newsreader",Georgia,"Times New Roman",serif;
+  --font-body:"Public Sans",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --title-size:17.5px; --title-weight:500; --title-lh:1.34; --title-ls:-.002em;
+}
+
+/* Softer, slightly irregular. */
+:root[data-type="notebook"]{
+  --font-display:"Fraunces",Georgia,serif;
+  --font-body:"Source Sans 3",system-ui,-apple-system,sans-serif;
+  --title-size:17px; --title-weight:600; --title-lh:1.3; --title-ls:-.006em;
+}
+/* Bold and modern — closest to where this board started. */
+:root[data-type="grotesque"]{
+  --font-display:"Archivo",system-ui,-apple-system,sans-serif;
+  --font-body:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
+  --title-size:16.5px; --title-weight:600; --title-lh:1.3; --title-ls:-.015em;
+}
+/* High-contrast display serif. Handsome, less plain. */
+:root[data-type="editorial"]{
+  --font-display:"Instrument Serif",Georgia,serif;
+  --font-body:"Instrument Sans",system-ui,-apple-system,sans-serif;
+  --title-size:20px; --title-weight:400; --title-lh:1.22; --title-ls:0;
+}
+/* One face throughout, for reading quickly. */
+:root[data-type="plain"]{
+  --font-display:"Public Sans",system-ui,-apple-system,sans-serif;
+  --font-body:"Public Sans",system-ui,-apple-system,sans-serif;
+  --title-size:16px; --title-weight:600; --title-lh:1.38; --title-ls:-.008em;
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
@@ -82,7 +114,7 @@
 html{-webkit-text-size-adjust:100%}
 body{
   margin:0; background:var(--ground); color:var(--ink);
-  font-family:"IBM Plex Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+  font-family:var(--font-body);
   font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased;
 }
 button,input{font:inherit;color:inherit}
@@ -99,13 +131,13 @@ button{background:none;border:0;cursor:pointer}
 }
 .top-row{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
 .brand{
-  font-family:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
-  font-weight:700;font-size:27px;letter-spacing:-.021em;margin:0;
+  font-family:var(--font-display);
+  font-weight:700;font-size:27px;letter-spacing:-.018em;margin:0;
   font-optical-sizing:auto;
 }
 .brand em{font-style:normal;color:var(--accent)}
 .tally{
-  font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:12px;
+  font-family:var(--font-mono);font-size:12px;
   color:var(--ink-faint);font-variant-numeric:tabular-nums;
 }
 .top-tools{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
@@ -138,6 +170,35 @@ button{background:none;border:0;cursor:pointer}
 .btn-primary{background:var(--ink);color:var(--ground);border-color:var(--ink)}
 .btn-primary:hover{opacity:.87}
 
+/* preferences */
+.pop-wrap{position:relative}
+.pop{
+  position:absolute;right:0;top:calc(100% + 8px);z-index:55;width:296px;
+  background:var(--surface);border:1px solid var(--line);border-radius:12px;
+  box-shadow:var(--shadow-2);padding:15px;
+  display:flex;flex-direction:column;gap:16px;text-align:left;
+}
+.pop[hidden]{display:none}
+.pop-label{
+  font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink-faint);margin:0 0 9px;
+}
+.pop-list{display:flex;flex-direction:column;gap:5px}
+.type-opt{
+  display:flex;flex-direction:column;gap:1px;align-items:flex-start;text-align:left;
+  padding:8px 11px;border-radius:9px;border:1px solid transparent;
+  background:var(--surface-2);transition:border-color .15s,background .15s;
+}
+.type-opt:hover{border-color:var(--line)}
+.type-opt[aria-pressed="true"]{border-color:var(--ink-faint);background:var(--surface)}
+.type-name{font-size:11.5px;font-weight:600;color:var(--ink)}
+.type-sample{font-size:17px;line-height:1.25;color:var(--ink);margin:2px 0 1px}
+.type-note{font-size:11px;color:var(--ink-faint);line-height:1.4}
+.pop-seg{width:100%}
+.pop-seg button{flex:1}
+.pop-wide{width:100%}
+.pop-note{font-size:11.5px;color:var(--ink-faint);margin:8px 0 0;line-height:1.45}
+
 /* filter rail */
 .rail{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-top:14px}
 .chip-filter{
@@ -149,7 +210,7 @@ button{background:none;border:0;cursor:pointer}
 .chip-filter:hover{color:var(--ink)}
 .chip-filter .dot{width:9px;height:9px;border-radius:50%;flex:none;border:1px solid rgba(0,0,0,.14)}
 .chip-filter .n{
-  font-family:"IBM Plex Mono",monospace;font-size:11px;
+  font-family:var(--font-mono);font-size:11px;
   color:var(--ink-faint);font-variant-numeric:tabular-nums;
 }
 .chip-filter[aria-pressed="true"]{background:var(--surface);color:var(--ink);border-color:var(--ink-faint)}
@@ -171,11 +232,11 @@ button{background:none;border:0;cursor:pointer}
 .column-head{display:flex;align-items:center;gap:8px;padding:0 2px 8px;border-bottom:2px solid var(--col-bd)}
 .column-head .dot{width:10px;height:10px;border-radius:50%;background:var(--col-bd)}
 .column-head h2{
-  font-family:"Bricolage Grotesque",sans-serif;font-size:14px;font-weight:700;
+  font-family:var(--font-display);font-size:14px;font-weight:700;
   letter-spacing:.005em;margin:0;
 }
 .column-head .n{
-  margin-left:auto;font-family:"IBM Plex Mono",monospace;font-size:11px;
+  margin-left:auto;font-family:var(--font-mono);font-size:11px;
   color:var(--ink-faint);font-variant-numeric:tabular-nums;
 }
 .column .card-body{margin-bottom:0}
@@ -184,25 +245,24 @@ button{background:none;border:0;cursor:pointer}
 .card{transform:translate(0,0)}
 .card-body{
   position:relative;background:var(--c-bg);border:1px solid var(--c-bd);
-  border-radius:var(--radius);padding:15px 17px 15px;color:var(--card-ink);
-  display:grid;grid-template-columns:21px 1fr;column-gap:11px;align-content:start;
-  transition:transform .18s cubic-bezier(.2,.8,.25,1),box-shadow .18s ease;
+  border-radius:var(--radius);padding:15px 18px 14px;color:var(--card-ink);
+  display:flex;flex-direction:column;align-items:stretch;
+  transition:transform .18s cubic-bezier(.2,.8,.25,1),box-shadow .18s ease,opacity .3s ease;
   box-shadow:var(--shadow-1);
 }
 .card:not(.is-open) .card-body:hover{transform:translateY(-2px);box-shadow:var(--shadow-2)}
 .card.is-open .card-body{transform:translateY(-3px);box-shadow:var(--shadow-2);border-color:var(--accent)}
 .card.is-struck .card-body{opacity:.5}
-.card-body{transition:transform .18s cubic-bezier(.2,.8,.25,1),box-shadow .18s ease,opacity .3s ease}
 
-.card-top{grid-column:1/-1;display:flex;align-items:center;gap:7px;margin-bottom:11px;min-height:17px}
+.card-top{display:flex;align-items:center;gap:7px;margin-bottom:13px;min-height:16px}
 .cat{
-  font-family:"IBM Plex Mono",monospace;font-size:10.5px;font-weight:500;
+  font-family:var(--font-mono);font-size:10.5px;font-weight:500;
   letter-spacing:.04em;
   padding:2px 6px;border-radius:4px;background:var(--c-chip);
   color:var(--card-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%;
 }
 .age{
-  margin-left:auto;font-family:"IBM Plex Mono",monospace;font-size:10.5px;
+  margin-left:auto;font-family:var(--font-mono);font-size:10.5px;
   color:var(--ink-faint);white-space:nowrap;font-variant-numeric:tabular-nums;
 }
 .age[data-heat="warm"]{color:var(--age-warm)}
@@ -210,7 +270,7 @@ button{background:none;border:0;cursor:pointer}
 .age[data-heat="cold"]{color:var(--age-cold);font-weight:500}
 
 .tick{
-  grid-column:1;width:21px;height:21px;padding:0;line-height:0;border-radius:5px;
+  flex:none;width:21px;height:21px;padding:0;line-height:0;border-radius:5px;
 }
 .tick svg{width:21px;height:21px;overflow:visible;display:block}
 
@@ -255,11 +315,12 @@ button{background:none;border:0;cursor:pointer}
   transition:opacity .18s ease,transform .18s ease;
 }
 
+/* the title sits high on the card and runs its full width — the tick has
+   moved to the foot, so nothing indents the text */
 .title{
-  grid-column:2;margin:0;
-  font-family:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
-  font-optical-sizing:auto;
-  font-size:16.5px;font-weight:500;line-height:1.3;letter-spacing:-.012em;
+  margin:0;font-family:var(--font-display);font-optical-sizing:auto;
+  font-size:var(--title-size);font-weight:var(--title-weight);
+  line-height:var(--title-lh);letter-spacing:var(--title-ls);
   text-wrap:pretty;
 }
 .card.is-struck .title{
@@ -269,7 +330,7 @@ button{background:none;border:0;cursor:pointer}
 
 /* the fade: description recedes until the card is focussed */
 .desc{
-  grid-column:2;margin:9px 0 0;
+  margin:11px 0 0;
   font-size:13.5px;line-height:1.62;color:var(--card-muted);
   opacity:.32;max-height:3.24em;overflow:hidden;   /* exactly two lines */
   -webkit-mask-image:linear-gradient(180deg,#000 42%,transparent 100%);
@@ -282,15 +343,20 @@ button{background:none;border:0;cursor:pointer}
   -webkit-mask-image:none;mask-image:none;white-space:pre-wrap;
 }
 
-.card-foot{grid-column:2;display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:12px 0 0;min-height:0}
-.card-foot:empty{display:none}
+/* the signature line — the tick is always here, bottom left, on every card,
+   so it never moves depending on what the card contains */
+.card-foot{
+  display:flex;align-items:center;gap:7px;flex-wrap:wrap;
+  margin-top:14px;padding-top:11px;border-top:1px solid var(--c-bd);
+}
+.card.is-open .card-foot{margin-top:16px}
 .who{
   display:inline-flex;align-items:center;gap:5px;padding:2px 8px 2px 2px;
   border-radius:999px;background:var(--c-chip);font-size:11.5px;font-weight:500;
 }
 .who .av{
   width:17px;height:17px;border-radius:50%;display:grid;place-items:center;
-  font-family:"IBM Plex Mono",monospace;font-size:9px;font-weight:500;
+  font-family:var(--font-mono);font-size:9px;font-weight:500;
   color:#fff;text-transform:uppercase;letter-spacing:.02em;
 }
 .note-chip{
@@ -298,7 +364,7 @@ button{background:none;border:0;cursor:pointer}
   padding:2px 8px;border-radius:999px;border:1px dashed var(--c-bd);
 }
 .list-tag{
-  font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.03em;
+  font-family:var(--font-mono);font-size:10px;letter-spacing:.03em;
   color:var(--card-muted);opacity:.62;margin-left:auto;
 }
 
@@ -314,18 +380,18 @@ button{background:none;border:0;cursor:pointer}
 /* why a task was closed stays visible without opening the card — it is
    usually the reason you are looking at a done task at all */
 .close-note{
-  grid-column:2;display:flex;gap:7px;align-items:flex-start;margin-top:9px;
+  display:flex;gap:7px;align-items:flex-start;margin-top:9px;
   font-size:12.5px;line-height:1.55;color:var(--card-muted);
 }
 .close-mark{color:var(--pen);font-weight:700;flex:none}
 
 /* the week: done work, by the day it was finished */
 .week-head h2{
-  font-family:"Bricolage Grotesque",sans-serif;font-size:14px;font-weight:700;
+  font-family:var(--font-display);font-size:14px;font-weight:700;
   letter-spacing:.005em;margin:0;
 }
 .week-head .date{
-  font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--ink-faint);
+  font-family:var(--font-mono);font-size:10.5px;color:var(--ink-faint);
   margin-left:7px;
 }
 .week-head.today h2{color:var(--accent)}
@@ -338,7 +404,7 @@ button{background:none;border:0;cursor:pointer}
 
 /* everything below appears only once a card is open — the card at rest
    stays quiet, and the detail arrives when it is asked for */
-.card-extra{grid-column:2;display:none}
+.card-extra{display:none}
 .card.is-open .card-extra{display:block}
 
 .comments{display:flex;flex-direction:column;gap:6px;margin-top:12px}
@@ -347,7 +413,7 @@ button{background:none;border:0;cursor:pointer}
   background:var(--c-chip);border-radius:8px;padding:7px 10px;
 }
 .comment .meta{
-  font-family:"IBM Plex Mono",monospace;font-size:10.5px;
+  font-family:var(--font-mono);font-size:10.5px;
   color:var(--card-muted);margin-right:6px;
 }
 .comment-form{display:flex;gap:6px;margin-top:8px}
@@ -371,7 +437,7 @@ button{background:none;border:0;cursor:pointer}
 .act-group{display:flex;gap:4px;margin-left:auto;align-items:center}
 .act-group .act{padding:4px 9px}
 .senior-tag{
-  font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.05em;
+  font-family:var(--font-mono);font-size:10px;letter-spacing:.05em;
   color:var(--card-muted);opacity:.7;
 }
 
@@ -379,8 +445,8 @@ button{background:none;border:0;cursor:pointer}
  * Larger text, looser leading, and the plainer of the two faces — the
  * typographic settings that make long descriptions easier to track. */
 :root[data-read="easy"] .title{
-  font-family:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;
-  font-size:16px;line-height:1.5;letter-spacing:0;font-weight:500;
+  font-family:var(--font-body);
+  font-size:16px;line-height:1.5;letter-spacing:0;font-weight:600;
 }
 :root[data-read="easy"] .desc{font-size:15px;line-height:1.85}
 :root[data-read="easy"] .card.is-open .desc{max-width:66ch}
@@ -389,7 +455,7 @@ button{background:none;border:0;cursor:pointer}
 
 /* ---------- states ---------------------------------------------------- */
 .msg{padding:64px 20px;text-align:center;color:var(--ink-muted)}
-.msg h2{font-family:"Bricolage Grotesque",sans-serif;font-size:19px;margin:0 0 6px;color:var(--ink)}
+.msg h2{font-family:var(--font-display);font-size:19px;margin:0 0 6px;color:var(--ink)}
 .msg p{margin:0;font-size:14px}
 .msg.error{color:var(--age-cold)}
 
@@ -426,7 +492,7 @@ button{background:none;border:0;cursor:pointer}
 .compose-stage .card{max-width:330px;margin:0 auto}
 .compose-stage .card-body{pointer-events:none}
 .stage-label{
-  font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.09em;
+  font-family:var(--font-mono);font-size:10px;letter-spacing:.09em;
   text-transform:uppercase;color:var(--ink-faint);text-align:center;margin:0 0 13px;
 }
 
@@ -442,21 +508,21 @@ button{background:none;border:0;cursor:pointer}
 
 .signals{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;min-height:21px}
 .signal{
-  font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.04em;
+  font-family:var(--font-mono);font-size:10.5px;letter-spacing:.04em;
   padding:3px 9px;border-radius:999px;background:var(--surface-3);color:var(--ink-faint);
 }
 .signal.on{background:var(--accent-soft);color:var(--accent)}
 .guide{font-size:12px;color:var(--ink-faint);margin:7px 0 0;line-height:1.55}
 .guide code{
-  font-family:"IBM Plex Mono",monospace;font-size:11px;
+  font-family:var(--font-mono);font-size:11px;
   background:var(--surface-3);padding:1.5px 5px;border-radius:4px;color:var(--ink-muted);
 }
 .sheet.open .sheet-card{transform:none}
-.sheet-card h2{font-family:"Bricolage Grotesque",sans-serif;font-size:18px;margin:0 0 3px}
+.sheet-card h2{font-family:var(--font-display);font-size:18px;margin:0 0 3px}
 .sheet-card .hint{font-size:12.5px;color:var(--ink-muted);margin:0 0 16px}
 .field{display:block;margin-bottom:11px}
 .field span{
-  display:block;font-family:"IBM Plex Mono",monospace;font-size:10.5px;
+  display:block;font-family:var(--font-mono);font-size:10.5px;
   letter-spacing:.07em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:5px;
 }
 .field input,.field textarea{
@@ -518,9 +584,28 @@ button{background:none;border:0;cursor:pointer}
           <button id="viewBoard" aria-pressed="false">Board</button>
           <button id="viewWeek" aria-pressed="false">Week</button>
         </div>
-        <button class="btn" id="readToggle" aria-pressed="false"
-                title="Larger text and looser line spacing">Easy read</button>
-        <button class="btn" id="themeToggle">Theme: auto</button>
+        <div class="pop-wrap">
+          <button class="btn" id="displayBtn" aria-expanded="false" aria-controls="displayPop">Display</button>
+          <div class="pop" id="displayPop" hidden>
+            <div>
+              <p class="pop-label">Typeface</p>
+              <div class="pop-list" id="typeList"></div>
+            </div>
+            <div>
+              <p class="pop-label">Theme</p>
+              <div class="seg pop-seg" id="themeSeg" role="group" aria-label="Theme">
+                <button type="button" data-theme="auto">Auto</button>
+                <button type="button" data-theme="light">Light</button>
+                <button type="button" data-theme="dark">Dark</button>
+              </div>
+            </div>
+            <div>
+              <button class="btn pop-wide" id="readToggle" aria-pressed="false">Easy read</button>
+              <p class="pop-note">Larger text and looser line spacing, in whichever
+                typeface is selected.</p>
+            </div>
+          </div>
+        </div>
         <button class="btn" id="doneToggle" aria-pressed="false">Show done</button>
         <button class="btn btn-primary" id="addOpen">Add task</button>
       </div>
@@ -943,7 +1028,6 @@ function buildCard(card, isPreview){
     '</svg>';
   if(isPreview) tick.tabIndex = -1;
   else tick.addEventListener("click", function(ev){ ev.stopPropagation(); toggleDone(card, wrap); });
-  body.appendChild(tick);
   body.appendChild(el("h3", "title", card.title));
 
   if(card.desc) body.appendChild(el("p", "desc", card.desc));
@@ -956,6 +1040,7 @@ function buildCard(card, isPreview){
   }
 
   var foot = el("div", "card-foot");
+  foot.appendChild(tick);                 // always here, bottom left
   card.assignees.forEach(function(name){
     var pretty = displayName(name);
     var who = el("span", "who");
@@ -981,7 +1066,7 @@ function buildCard(card, isPreview){
     foot.appendChild(a);
   });
   if(state.view === "wall" && !isPreview) foot.appendChild(el("span", "list-tag", card.listTitle));
-  if(foot.children.length) body.appendChild(foot);
+  body.appendChild(foot);
 
   if(!isPreview) body.appendChild(buildExtra(card));
 
@@ -1738,20 +1823,80 @@ document.getElementById("doneToggle").addEventListener("click", function(){
   render();
 });
 
-/* Three states, matching how the page is themed: follow the system, or
-   pin one. The label always says which, so nothing is a guess. */
-var THEMES = ["auto", "light", "dark"];
+/* ---------- preferences ---------------------------------------------- */
+var TYPEFACES = [
+  { id:"ledger",    name:"Ledger",
+    css:'"Newsreader",Georgia,serif',
+    note:"A text serif over a plain sans. Reads like a memo." },
+  { id:"notebook",  name:"Notebook",
+    css:'"Fraunces",Georgia,serif',
+    note:"Softer and slightly irregular. The warmest of the five." },
+  { id:"grotesque", name:"Grotesque",
+    css:'"Archivo",system-ui,sans-serif',
+    note:"Bold and modern. Closest to where this board started." },
+  { id:"editorial", name:"Editorial",
+    css:'"Instrument Serif",Georgia,serif',
+    note:"High-contrast display serif. Handsome, less plain." },
+  { id:"plain",     name:"Plain",
+    css:'"Public Sans",system-ui,sans-serif',
+    note:"One face throughout. Quickest to read." }
+];
+
+function setTypeface(id, remember){
+  var root = document.documentElement;
+  if(id === "ledger") root.removeAttribute("data-type");
+  else root.setAttribute("data-type", id);
+  Array.prototype.forEach.call(document.querySelectorAll(".type-opt"), function(b){
+    b.setAttribute("aria-pressed", b.dataset.type === id ? "true" : "false");
+  });
+  if(remember !== false) savePrefs({ typeface: id });
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ reflow(false); });
+  else reflow(false);
+}
+
+function buildTypeList(){
+  var list = document.getElementById("typeList");
+  list.textContent = "";
+  TYPEFACES.forEach(function(t){
+    var b = el("button", "type-opt");
+    b.type = "button";
+    b.dataset.type = t.id;
+    b.setAttribute("aria-pressed", "false");
+    b.appendChild(el("span", "type-name", t.name));
+    var sample = el("span", "type-sample", "Cannot edit a submitted week");
+    sample.style.fontFamily = t.css;      // each option previews its own face
+    b.appendChild(sample);
+    b.appendChild(el("span", "type-note", t.note));
+    b.addEventListener("click", function(){ setTypeface(t.id); });
+    list.appendChild(b);
+  });
+}
+
 function setTheme(theme, remember){
   var root = document.documentElement;
   if(theme === "auto") root.removeAttribute("data-theme");
   else root.setAttribute("data-theme", theme);
-  document.getElementById("themeToggle").textContent = "Theme: " + theme;
+  Array.prototype.forEach.call(document.querySelectorAll("#themeSeg button"), function(b){
+    b.setAttribute("aria-pressed", b.dataset.theme === theme ? "true" : "false");
+  });
   if(remember !== false) savePrefs({ theme: theme });
 }
-document.getElementById("themeToggle").addEventListener("click", function(){
-  var cur = loadPrefs().theme || "auto";
-  setTheme(THEMES[(THEMES.indexOf(cur) + 1) % THEMES.length]);
+Array.prototype.forEach.call(document.querySelectorAll("#themeSeg button"), function(b){
+  b.addEventListener("click", function(){ setTheme(b.dataset.theme); });
 });
+
+var displayBtn = document.getElementById("displayBtn");
+var displayPop = document.getElementById("displayPop");
+function setPop(open){
+  displayPop.hidden = !open;
+  displayBtn.setAttribute("aria-expanded", open ? "true" : "false");
+}
+displayBtn.addEventListener("click", function(ev){
+  ev.stopPropagation();
+  setPop(displayPop.hidden);
+});
+displayPop.addEventListener("click", function(ev){ ev.stopPropagation(); });
+document.addEventListener("click", function(){ setPop(false); });
 
 function setEasyRead(on, remember){
   var root = document.documentElement;
@@ -1782,7 +1927,8 @@ Object.keys(VIEWS).forEach(function(v){
 
 document.addEventListener("keydown", function(ev){
   if(ev.key === "Escape"){
-    if(sheet.classList.contains("open")) closeSheet();
+    if(!displayPop.hidden){ setPop(false); displayBtn.focus(); }
+    else if(sheet.classList.contains("open")) closeSheet();
     else if(state.openId){ openCard(state.openId); }
   }
   if(ev.key === "/" && document.activeElement !== qInput &&
@@ -1869,6 +2015,8 @@ function boot(){
 /* ---------- start ----------------------------------------------------- */
 (function start(){
   var prefs = loadPrefs();
+  buildTypeList();
+  setTypeface(prefs.typeface || "ledger", false);
   setTheme(prefs.theme || "auto", false);
   setEasyRead(!!prefs.easyRead, false);
   if(VIEWS[prefs.view]){
