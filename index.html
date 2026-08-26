@@ -399,6 +399,7 @@ button{background:none;border:0;cursor:pointer}
 }
 .link-chip:hover{color:var(--card-ink);text-decoration:underline}
 .link-chip svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:1.8}
+.assigned-chip{padding:2px 9px;border:1px dashed var(--c-bd);background:transparent}
 
 /* why a task was closed stays visible without opening the card — it is
    usually the reason you are looking at a done task at all */
@@ -672,7 +673,7 @@ button{background:none;border:0;cursor:pointer}
 
     <label class="field">
       <span>Title</span>
-      <input type="text" id="newTitle" required autocomplete="off"
+      <input type="text" id="newTitle" required autocomplete="off" maxlength="1024"
              placeholder="TIMESHEETS: Cannot edit a submitted week (emma)">
       <div class="signals" id="signals"></div>
       <p class="guide" id="titleGuide">Try <code>AREA: what happens (who)</code> — for example
@@ -1008,6 +1009,7 @@ function ingest(board){
           return { when: c.when, who: c.who, text: decodeEntities(c.text || "") };
         }),
         links: task.links || [],
+        assignment: task.assignment || null,
         closeNote: task.closeNote || null,
         due: task.due || null,
         completedAt: task.completedAt || null,
@@ -1105,11 +1107,23 @@ function buildCard(card, isPreview){
     a.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">' +
       '<rect x="2.5" y="5" width="19" height="14" rx="2"></rect>' +
       '<path d="M3 7l9 6 9-6"></path></svg>';
-    a.appendChild(el("span", null,
-      link.type === "email" ? "Open the email" : (link.description || "Open the link")));
+    a.appendChild(el("span", null, LINK_LABELS[link.type] ||
+                                   link.description || "Open the link"));
     a.addEventListener("click", function(ev){ ev.stopPropagation(); });
     foot.appendChild(a);
   });
+  if(card.assignment && card.assignment.link){
+    var surface = card.assignment.surface === "SPACE" ? "Chat space" : "document";
+    var a2 = document.createElement("a");
+    a2.className = "link-chip assigned-chip";
+    a2.href = card.assignment.link;
+    a2.target = "_blank";
+    a2.rel = "noopener noreferrer";
+    a2.title = "Assigned from a " + surface + ". Assigned tasks cannot carry notes.";
+    a2.textContent = "Assigned from a " + surface;
+    a2.addEventListener("click", function(ev){ ev.stopPropagation(); });
+    foot.appendChild(a2);
+  }
   if(state.view === "wall" && !isPreview) foot.appendChild(el("span", "list-tag", card.listTitle));
   body.appendChild(foot);
 
@@ -1152,7 +1166,7 @@ function buildExtra(card){
     extra.appendChild(list);
   }
 
-  if(state.viewer.isSenior){
+  if(state.viewer.isSenior && !(card.assignment && card.assignment.link)){
     var form = el("form", "comment-form");
     var input = document.createElement("input");
     input.type = "text";
@@ -1268,6 +1282,15 @@ function buildExtra(card){
   return extra;
 }
 
+/* The documented link types. links[] is output-only — these are places the
+   task came from, never something the board writes. */
+var LINK_LABELS = {
+  email: "Open the email",
+  chat_message: "Open the chat message",
+  keep_note: "Open the note",
+  generic: "Open the link"
+};
+
 var TODAY_TITLE = "TODAY";
 var INTAKE_TITLE = "UNSORTED";   // new tasks land here until they are filed
 
@@ -1313,10 +1336,12 @@ function claudeBrief(card){
   var due = card.due ? longDate(card.due) : null;
   if(due){
     var overdue = card.age && card.age.weeks > 0;
-    fields.push("Was due: " + due +
+    // The API calls this the day the task should be done and is shown on the
+    // calendar, explicitly not a deadline — so say scheduled, not due.
+    fields.push("Scheduled for: " + due +
       (overdue ? " (" + card.age.weeks + " weeks ago)" : ""));
   } else {
-    fields.push("Was due: no date set");
+    fields.push("Scheduled for: no date set");
   }
 
   if(card.completed){

@@ -207,14 +207,45 @@ which is what happened here.
 Worth recording that reading paid for itself anyway: the same round of
 documents turned up `showAssigned`, which was silently dropping tasks.
 
-## 12. Open question I could not settle
+## 12. The last page found two more bugs
 
-Which fields of the `Task` resource are writable. `tasks.insert` documents its
-request body only as "an instance of Task" and does not enumerate the
-output-only fields, so `due` being settable on create is strongly implied — it
-is a Task field, nothing marks it read-only — but not stated outright. Every
-new task this board creates sets `due`, so if that assumption is wrong the
-default-to-today behaviour silently does nothing.
+The `Task` resource page settled the open question — `due` is not marked output
+only, so it is writable, and default-to-today works. It also turned up two
+things I had not thought to ask about:
 
-The `Task` resource page would settle it, along with the exact shape of
-`links[]` that the "Open the email" chip maps.
+**Notes have an 8,192 character ceiling.** Comments and closing notes are
+appended to a task's own notes, one line at a time, forever. A task with a long
+thread would eventually hit the limit and the patch would fail — at the API,
+with a raw error, at the moment someone pressed Comment. Both write paths now
+check first and explain. I had designed an append-only log into a bounded field
+and never looked up the bound.
+
+**Assigned tasks cannot have notes at all.** Tasks assigned from Google Docs
+have no notes field. I had *just* enabled `showAssigned`, so those tasks had
+started arriving on the board for the first time — complete with a comment box
+that would have failed on every one. Fixing one bug had quietly armed another.
+The comment box is now hidden for them, a closing note is refused after the
+tick rather than instead of it, and they carry a chip linking back to the
+document or Chat space they came from.
+
+Also corrected: `due` is documented as the day a task should be done and shows
+on the calendar grid, and explicitly *not* a deadline. The brief now says
+"Scheduled for" rather than "Was due".
+
+**Lesson.** "Can I write this field?" was the question I went in with, and it
+was the least valuable thing on the page. The ceilings and the read-only flags
+— the constraints on a field rather than its existence — were where the actual
+bugs were. Reading a resource definition for one answer and stopping is the
+same mistake as reading `tasks.list` for pagination and missing `showAssigned`,
+which is now the third time in this project.
+
+## 13. Open question I could not settle
+
+Nothing outstanding on the Tasks API. Everything this board depends on has now
+been checked against the reference rather than recalled.
+
+What remains unverified is operational, not documented: whether the OAuth
+`auth/tasks` scope is classed sensitive for a Workspace-internal deployment,
+and whether `Session.getActiveUser().getEmail()` really returns empty for
+off-domain viewers. Both only bite at deployment, and both are visible the
+first time someone outside the domain opens the board.

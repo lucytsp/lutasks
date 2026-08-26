@@ -54,6 +54,12 @@ function listAllTasks_(listId) {
  * Keeping them in the task rather than in a side table means they survive a
  * lost script, and seniors can read them without this board.
  */
+// Documented maxima on the Task resource. notes matters most here: comments
+// and closing notes are appended to it, so a long-running task can grow into
+// the ceiling and the patch would fail.
+var NOTES_MAX = 8192;
+var TITLE_MAX = 1024;
+
 var COMMENT_LINE = /^\s*»\s*(.+?)\s*·\s*(.+?):\s*([\s\S]*)$/;
 
 /* Why a task was closed, written the same way, on its own line:
@@ -82,10 +88,18 @@ function toCard_(task, listId) {
     notes: split.body,
     comments: split.comments,
     closeNote: split.closeNote,
-    // Tasks created from Gmail carry a link back to the message.
+    // links[] is output-only: a task created from Gmail carries a link back to
+    // the message, and there is no way to write one. That is why a task is
+    // never copied between lists — a copy could not carry its link.
     links: (task.links || []).map(function (l) {
-      return { type: l.type || 'link', description: l.description || '', link: l.link || '' };
+      return { type: l.type || 'generic', description: l.description || '', link: l.link || '' };
     }).filter(function (l) { return l.link; }),
+    // Assigned tasks (from Docs or Chat) arrive now that showAssigned is set.
+    // They cannot be edited the usual way, so the board needs to know.
+    assignment: task.assignmentInfo ? {
+      link: task.assignmentInfo.linkToTask || '',
+      surface: task.assignmentInfo.surfaceType || ''
+    } : null,
     completed: task.status === 'completed',
     due: task.due || null,
     updated: task.updated || null,
@@ -159,12 +173,31 @@ function addComment(listId, taskId, text) {
     if (!text) return { success: false, error: 'Write something first.' };
 
     var task = Tasks.Tasks.get(listId, taskId);
+
+    // Tasks assigned from Google Docs cannot have notes at all.
+    if (task.assignmentInfo) {
+      return {
+        success: false,
+        error: 'This task was assigned from ' +
+               (task.assignmentInfo.surfaceType === 'SPACE' ? 'a Chat space' : 'a document') +
+               ', and assigned tasks cannot carry notes. Comment where it came from instead.'
+      };
+    }
+
     var stamp = Utilities.formatDate(new Date(), 'Europe/London', 'd MMM');
     var name = who.email.split('@')[0];
     var line = '» ' + stamp + ' · ' + name + ': ' + text;
 
     var notes = (task.notes || '');
     notes = notes ? notes + '\n' + line : line;
+
+    if (notes.length > NOTES_MAX) {
+      return {
+        success: false,
+        error: 'The notes on this task are full (' + NOTES_MAX + ' characters). ' +
+               'Tidy up the older comments before adding another.'
+      };
+    }
 
     var updated = Tasks.Tasks.patch({ notes: notes }, listId, taskId);
     return { success: true, task: toCard_(updated, listId) };
@@ -277,6 +310,10 @@ function addTask(listId, title, notes, due) {
   try {
     title = (title || '').trim();
     if (!title) return { success: false, error: 'A title is required.' };
+    if (title.length > TITLE_MAX) {
+      return { success: false, error: 'That title is too long — the limit is ' +
+                                      TITLE_MAX + ' characters.' };
+    }
 
     const lists = Tasks.Tasklists.list({ maxResults: 100 }).items || [];
     const valid = lists.some(function (l) { return l.id === listId; });
@@ -339,11 +376,29 @@ function setTaskStatus(listId, taskId, completed, note) {
 
     if (completed && note) {
       const task = Tasks.Tasks.get(listId, taskId);
+      if (task.assignmentInfo) {
+        // Still tick it — just without the note, which cannot be stored.
+        Tasks.Tasks.patch({ status: 'completed' }, listId, taskId);
+        return {
+          success: false,
+          error: 'Marked done, but assigned tasks cannot carry notes, so the ' +
+                 'reason was not saved.'
+        };
+      }
       const stamp = Utilities.formatDate(new Date(), 'Europe/London', 'd MMM');
       const kept = (task.notes || '').split('\n')
         .filter(function (l) { return !CLOSED_LINE.test(l); });
       kept.push('✓ ' + stamp + ': ' + note);
-      patch.notes = kept.join('\n').replace(/^\n+/, '');
+      const merged = kept.join('\n').replace(/^\n+/, '');
+      if (merged.length > NOTES_MAX) {
+        Tasks.Tasks.patch({ status: 'completed' }, listId, taskId);
+        return {
+          success: false,
+          error: 'Marked done, but the notes on this task are full, so the ' +
+                 'reason was not saved.'
+        };
+      }
+      patch.notes = merged;
     } else if (!completed) {
       const existing = Tasks.Tasks.get(listId, taskId);
       if (CLOSED_LINE.test(existing.notes || '')) {

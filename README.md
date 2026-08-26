@@ -225,8 +225,23 @@ Checked against the `tasks.list` and `tasks.move` reference pages.
   Reordering goes through `tasks.move` with `previous` (omit it for first
   position). A task that is both completed and hidden can only move to
   position 0, so this board reorders top-level uncompleted tasks only.
-- **Ceilings.** 20,000 non-hidden tasks per list, 100,000 in total, and 2,000
-  subtasks per task.
+- **Ceilings.** Titles 1,024 characters, notes 8,192, 20,000 non-hidden tasks
+  per list, 100,000 in total, 2,000 subtasks per task. The notes ceiling is the
+  live one here: comments and closing notes are appended to a task's notes, so
+  a long-running task can grow into it. Both writes check first and say so
+  rather than failing at the API.
+- **`links[]` is output-only.** A task created from Gmail carries a link back
+  to the message and there is no way to write one. This is why a task is never
+  copied between lists — a copy could not carry its link.
+- **`due` is a scheduled date, not a deadline.** The documentation is explicit:
+  it is the day the task should be done and appears on the calendar grid. The
+  Claude brief says "Scheduled for" rather than "Was due" for that reason.
+- **Assigned tasks cannot carry notes.** Tasks assigned from Google Docs have
+  no notes field, so the board does not offer a comment box on them, and a
+  closing note on one is refused after the task is ticked rather than silently
+  dropped. They show an "Assigned from a document / Chat space" chip linking
+  back to where they came from.
+- **`position`, `parent`, `hidden` and `links` are all read-only.**
 
 ### Worth doing later
 
