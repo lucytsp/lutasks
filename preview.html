@@ -1,0 +1,1235 @@
+<title>Task Wall</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;450;500;600&display=swap">
+<style>
+/* ---------- tokens ---------------------------------------------------- */
+:root{
+  --ground:#edeff3; --surface:#ffffff; --surface-2:#f5f7f9; --surface-3:#e7eaf0;
+  --ink:#16181d; --ink-muted:#5a6270; --ink-faint:#8a92a0;
+  --line:#d8dde5; --line-soft:#e5e9ef;
+  --accent:#d2542a; --accent-soft:#f6e2da;
+  --card-ink:#16181d; --card-muted:#59616f;
+  --age-warm:#a06412; --age-hot:#b04f1c; --age-cold:#a33a3a;
+  --pen:#26469f;
+  --shadow-1:0 1px 2px rgba(16,20,30,.05),0 1px 1px rgba(16,20,30,.04);
+  --shadow-2:0 14px 30px -10px rgba(16,20,30,.22),0 5px 10px -6px rgba(16,20,30,.12);
+
+  --t-rose-bg:#fbdee2;   --t-rose-bd:#f0bcc4;   --t-rose-chip:#f5cbd2;
+  --t-indigo-bg:#e2e4f8; --t-indigo-bd:#c4c8ee; --t-indigo-chip:#d2d6f1;
+  --t-slate-bg:#e1e7ed;  --t-slate-bd:#c6d0da;  --t-slate-chip:#d4dce4;
+  --t-teal-bg:#d7ede8;   --t-teal-bd:#b0d8d0;   --t-teal-chip:#c6e4dd;
+  --t-amber-bg:#faeace;  --t-amber-bd:#edd3a0;  --t-amber-chip:#f4e0ba;
+  --t-green-bg:#dfefda;  --t-green-bd:#bcddb5;  --t-green-chip:#d0e7c9;
+  --t-violet-bg:#ebe1f5; --t-violet-bd:#d3c2e8; --t-violet-chip:#e0d2ef;
+  --t-cyan-bg:#d8eaf6;   --t-cyan-bd:#b0d3e8;   --t-cyan-chip:#c6e0f1;
+
+  --gap:16px; --row:4px; --radius:9px;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0e1014; --surface:#171a20; --surface-2:#1e222a; --surface-3:#262b34;
+    --ink:#e8eaef; --ink-muted:#99a1b0; --ink-faint:#6e7686;
+    --line:#2a2f39; --line-soft:#232830;
+    --accent:#f2764a; --accent-soft:#3a2117;
+    --card-ink:#e8eaef; --card-muted:#a2aab8;
+    --age-warm:#d9a441; --age-hot:#e88a54; --age-cold:#e97878;
+    --pen:#9bbbff;
+    --shadow-1:0 1px 2px rgba(0,0,0,.4);
+    --shadow-2:0 16px 34px -10px rgba(0,0,0,.66),0 6px 12px -6px rgba(0,0,0,.5);
+
+    --t-rose-bg:#3a1e26;   --t-rose-bd:#57303b;   --t-rose-chip:#4a2731;
+    --t-indigo-bg:#1f2340; --t-indigo-bd:#363d68; --t-indigo-chip:#2a3053;
+    --t-slate-bg:#1d242b;  --t-slate-bd:#313c46;  --t-slate-chip:#262f38;
+    --t-teal-bg:#10302b;   --t-teal-bd:#1e4b43;   --t-teal-chip:#163c35;
+    --t-amber-bg:#34290f;  --t-amber-bd:#513f19;  --t-amber-chip:#413320;
+    --t-green-bg:#172e18;  --t-green-bd:#274828;  --t-green-chip:#1e3a1f;
+    --t-violet-bg:#271a38; --t-violet-bd:#3e2b55; --t-violet-chip:#312145;
+    --t-cyan-bg:#12293a;   --t-cyan-bd:#1f4258;   --t-cyan-chip:#183449;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0e1014; --surface:#171a20; --surface-2:#1e222a; --surface-3:#262b34;
+  --ink:#e8eaef; --ink-muted:#99a1b0; --ink-faint:#6e7686;
+  --line:#2a2f39; --line-soft:#232830;
+  --accent:#f2764a; --accent-soft:#3a2117;
+  --card-ink:#e8eaef; --card-muted:#a2aab8;
+  --age-warm:#d9a441; --age-hot:#e88a54; --age-cold:#e97878;
+  --pen:#9bbbff;
+  --shadow-1:0 1px 2px rgba(0,0,0,.4);
+  --shadow-2:0 16px 34px -10px rgba(0,0,0,.66),0 6px 12px -6px rgba(0,0,0,.5);
+
+  --t-rose-bg:#3a1e26;   --t-rose-bd:#57303b;   --t-rose-chip:#4a2731;
+  --t-indigo-bg:#1f2340; --t-indigo-bd:#363d68; --t-indigo-chip:#2a3053;
+  --t-slate-bg:#1d242b;  --t-slate-bd:#313c46;  --t-slate-chip:#262f38;
+  --t-teal-bg:#10302b;   --t-teal-bd:#1e4b43;   --t-teal-chip:#163c35;
+  --t-amber-bg:#34290f;  --t-amber-bd:#513f19;  --t-amber-chip:#413320;
+  --t-green-bg:#172e18;  --t-green-bd:#274828;  --t-green-chip:#1e3a1f;
+  --t-violet-bg:#271a38; --t-violet-bd:#3e2b55; --t-violet-chip:#312145;
+  --t-cyan-bg:#12293a;   --t-cyan-bd:#1f4258;   --t-cyan-chip:#183449;
+}
+
+/* ---------- base ------------------------------------------------------ */
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:"IBM Plex Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+  font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased;
+}
+button,input{font:inherit;color:inherit}
+button{background:none;border:0;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+
+.wrap{max-width:1560px;margin:0 auto;padding:0 24px 96px}
+
+/* ---------- header ---------------------------------------------------- */
+.top{
+  position:sticky;top:0;z-index:40;background:var(--ground);
+  padding:22px 0 12px;
+  box-shadow:0 12px 16px -14px rgba(16,20,30,.28);
+}
+.top-row{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
+.brand{
+  font-family:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  font-weight:700;font-size:27px;letter-spacing:-.021em;margin:0;
+  font-optical-sizing:auto;
+}
+.brand em{font-style:normal;color:var(--accent)}
+.tally{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:12px;
+  color:var(--ink-faint);font-variant-numeric:tabular-nums;
+}
+.top-tools{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+
+.search{position:relative}
+.search input{
+  width:210px;padding:7px 11px 7px 30px;border-radius:7px;
+  border:1px solid var(--line);background:var(--surface);
+  transition:width .18s ease,border-color .15s ease;
+}
+.search input:focus{width:250px;border-color:var(--accent);outline:none}
+.search svg{
+  position:absolute;left:9px;top:50%;transform:translateY(-50%);
+  width:14px;height:14px;stroke:var(--ink-faint);fill:none;stroke-width:2;
+}
+
+.seg{display:flex;background:var(--surface-3);border-radius:8px;padding:2px}
+.seg button{
+  padding:5px 13px;border-radius:6px;font-size:13px;font-weight:500;
+  color:var(--ink-muted);transition:background .15s,color .15s;
+}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow-1)}
+
+.btn{
+  padding:7px 14px;border-radius:7px;font-size:13.5px;font-weight:500;
+  border:1px solid var(--line);background:var(--surface);
+  transition:border-color .15s,background .15s;
+}
+.btn:hover{border-color:var(--ink-faint)}
+.btn-primary{background:var(--ink);color:var(--ground);border-color:var(--ink)}
+.btn-primary:hover{opacity:.87}
+
+/* filter rail */
+.rail{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-top:14px}
+.chip-filter{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:5px 11px 5px 9px;border-radius:999px;font-size:12.5px;font-weight:500;
+  border:1px solid var(--line);background:var(--surface);color:var(--ink-muted);
+  transition:border-color .15s,color .15s,background .15s;
+}
+.chip-filter:hover{color:var(--ink)}
+.chip-filter .dot{width:9px;height:9px;border-radius:50%;flex:none;border:1px solid rgba(0,0,0,.14)}
+.chip-filter .n{
+  font-family:"IBM Plex Mono",monospace;font-size:11px;
+  color:var(--ink-faint);font-variant-numeric:tabular-nums;
+}
+.chip-filter[aria-pressed="true"]{background:var(--surface);color:var(--ink);border-color:var(--ink-faint)}
+.chip-filter[aria-pressed="false"]{opacity:.42}
+.rail-sep{width:1px;height:20px;background:var(--line);margin:0 4px}
+
+/* ---------- wall (masonry) ------------------------------------------- */
+.wall{
+  display:grid;gap:var(--gap);
+  grid-template-columns:repeat(auto-fill,minmax(268px,1fr));
+  grid-auto-rows:var(--row);
+  margin-top:22px;
+}
+.wall > .card{align-self:start}
+
+/* ---------- board (columns) ------------------------------------------ */
+.board{display:flex;gap:var(--gap);overflow-x:auto;padding:22px 2px 8px;scroll-snap-type:x proximity}
+.column{flex:0 0 300px;scroll-snap-align:start;display:flex;flex-direction:column;gap:10px}
+.column-head{display:flex;align-items:center;gap:8px;padding:0 2px 8px;border-bottom:2px solid var(--col-bd)}
+.column-head .dot{width:10px;height:10px;border-radius:50%;background:var(--col-bd)}
+.column-head h2{
+  font-family:"Bricolage Grotesque",sans-serif;font-size:13px;font-weight:700;
+  letter-spacing:.045em;text-transform:uppercase;margin:0;
+}
+.column-head .n{
+  margin-left:auto;font-family:"IBM Plex Mono",monospace;font-size:11px;
+  color:var(--ink-faint);font-variant-numeric:tabular-nums;
+}
+.column .card-body{margin-bottom:0}
+
+/* ---------- card ------------------------------------------------------ */
+.card{transform:translate(0,0)}
+.card-body{
+  position:relative;background:var(--c-bg);border:1px solid var(--c-bd);
+  border-radius:var(--radius);padding:15px 17px 15px;color:var(--card-ink);
+  display:grid;grid-template-columns:21px 1fr;column-gap:11px;align-content:start;
+  transition:transform .18s cubic-bezier(.2,.8,.25,1),box-shadow .18s ease;
+  box-shadow:var(--shadow-1);
+}
+.card:not(.is-open) .card-body:hover{transform:translateY(-2px);box-shadow:var(--shadow-2)}
+.card.is-open .card-body{transform:translateY(-3px);box-shadow:var(--shadow-2);border-color:var(--accent)}
+.card.is-struck .card-body{opacity:.5}
+.card-body{transition:transform .18s cubic-bezier(.2,.8,.25,1),box-shadow .18s ease,opacity .3s ease}
+
+.card-top{grid-column:1/-1;display:flex;align-items:center;gap:7px;margin-bottom:11px;min-height:17px}
+.cat{
+  font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:500;
+  letter-spacing:.07em;text-transform:uppercase;
+  padding:2px 6px;border-radius:4px;background:var(--c-chip);
+  color:var(--card-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%;
+}
+.age{
+  margin-left:auto;font-family:"IBM Plex Mono",monospace;font-size:10.5px;
+  color:var(--ink-faint);white-space:nowrap;font-variant-numeric:tabular-nums;
+}
+.age[data-heat="warm"]{color:var(--age-warm)}
+.age[data-heat="hot"]{color:var(--age-hot)}
+.age[data-heat="cold"]{color:var(--age-cold);font-weight:500}
+
+.tick{
+  grid-column:1;width:21px;height:21px;padding:0;line-height:0;border-radius:5px;
+}
+.tick svg{width:21px;height:21px;overflow:visible;display:block}
+
+/* the box, ruled by hand — deliberately off-square */
+.tick-box{
+  fill:none;stroke:var(--card-muted);stroke-width:1.5;
+  stroke-linecap:round;stroke-linejoin:round;opacity:.42;
+  transition:opacity .16s ease,stroke .16s ease;
+}
+.card-body:hover .tick-box,.card.is-open .tick-box{opacity:.72}
+.tick:hover .tick-box{stroke:var(--pen);opacity:1}
+.card.is-done .tick-box{opacity:.28}
+
+/* the tick, stroked on as if by hand, overshooting the box the way a real
+   one does. pathLength normalises the dash maths to 0-100. */
+.tick-mark{
+  fill:none;stroke:var(--pen);stroke-width:2.8;
+  stroke-linecap:round;stroke-linejoin:round;
+  stroke-dasharray:100;stroke-dashoffset:101;
+  transition:stroke-dashoffset .2s cubic-bezier(.55,0,.85,.3);
+}
+.card.is-done .tick-mark{
+  stroke-dashoffset:0;
+  transition:stroke-dashoffset .44s cubic-bezier(.3,.72,.36,1);
+}
+
+/* the nib goes down, then lifts */
+@keyframes nib{
+  0%{transform:scale(1)} 26%{transform:scale(.84)}
+  58%{transform:scale(1.09)} 100%{transform:scale(1)}
+}
+.tick.inking{animation:nib .44s cubic-bezier(.34,1.4,.64,1)}
+
+/* the page takes the pressure and settles */
+@keyframes settle{
+  0%{transform:translateY(0) scale(1)} 30%{transform:translateY(1.5px) scale(.991)}
+  100%{transform:translateY(0) scale(1)}
+}
+.card-body.settling{animation:settle .44s ease-out}
+.card.is-leaving .card-body{
+  opacity:0;transform:scale(.965);
+  transition:opacity .18s ease,transform .18s ease;
+}
+
+.title{
+  grid-column:2;margin:0;
+  font-family:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  font-optical-sizing:auto;
+  font-size:16.5px;font-weight:500;line-height:1.3;letter-spacing:-.012em;
+  text-wrap:pretty;
+}
+.card.is-struck .title{
+  text-decoration:line-through;text-decoration-thickness:1.5px;
+  text-decoration-color:color-mix(in srgb,var(--pen) 55%,transparent);
+}
+
+/* the fade: description recedes until the card is focussed */
+.desc{
+  grid-column:2;margin:9px 0 0;
+  font-size:13.5px;line-height:1.62;color:var(--card-muted);
+  opacity:.32;max-height:3.24em;overflow:hidden;   /* exactly two lines */
+  -webkit-mask-image:linear-gradient(180deg,#000 42%,transparent 100%);
+  mask-image:linear-gradient(180deg,#000 42%,transparent 100%);
+  transition:opacity .2s ease,max-height .3s cubic-bezier(.2,.8,.25,1);
+}
+.card-body:hover .desc{opacity:.72}
+.card.is-open .desc{
+  opacity:1;max-height:56em;max-width:54ch;
+  -webkit-mask-image:none;mask-image:none;white-space:pre-wrap;
+}
+
+.card-foot{grid-column:2;display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:12px 0 0;min-height:0}
+.card-foot:empty{display:none}
+.who{
+  display:inline-flex;align-items:center;gap:5px;padding:2px 8px 2px 2px;
+  border-radius:999px;background:var(--c-chip);font-size:11.5px;font-weight:500;
+}
+.who .av{
+  width:17px;height:17px;border-radius:50%;display:grid;place-items:center;
+  font-family:"IBM Plex Mono",monospace;font-size:9px;font-weight:500;
+  color:#fff;text-transform:uppercase;letter-spacing:.02em;
+}
+.note-chip{
+  font-size:11px;font-style:italic;color:var(--card-muted);opacity:.8;
+  padding:2px 8px;border-radius:999px;border:1px dashed var(--c-bd);
+}
+.list-tag{
+  font-family:"IBM Plex Mono",monospace;font-size:9.5px;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--card-muted);opacity:.62;margin-left:auto;
+}
+
+/* ---------- states ---------------------------------------------------- */
+.msg{padding:64px 20px;text-align:center;color:var(--ink-muted)}
+.msg h2{font-family:"Bricolage Grotesque",sans-serif;font-size:19px;margin:0 0 6px;color:var(--ink)}
+.msg p{margin:0;font-size:14px}
+.msg.error{color:var(--age-cold)}
+
+.skeleton{border-radius:var(--radius);background:var(--surface-2);animation:pulse 1.5s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.55}50%{opacity:.95}}
+
+.banner{
+  display:flex;align-items:center;gap:10px;margin:18px 0 -4px;padding:9px 14px;
+  border-radius:8px;background:var(--accent-soft);border:1px solid var(--c-bd,transparent);
+  font-size:12.5px;color:var(--ink-muted);
+}
+.banner strong{color:var(--ink);font-weight:600}
+
+/* ---------- add form -------------------------------------------------- */
+.sheet{
+  position:fixed;inset:0;z-index:60;display:grid;place-items:start center;
+  padding:14vh 20px;background:rgba(14,16,20,.42);
+  opacity:0;pointer-events:none;transition:opacity .18s ease;
+}
+.sheet.open{opacity:1;pointer-events:auto}
+.sheet-card{
+  width:min(600px,100%);background:var(--surface);border-radius:14px;
+  border:1px solid var(--line);box-shadow:var(--shadow-2);padding:24px 26px 22px;
+  max-height:88vh;overflow-y:auto;
+  transform:translateY(-8px);transition:transform .2s cubic-bezier(.2,.8,.25,1);
+}
+
+/* the card you are about to make, built by the same code that builds the
+   wall — so what you see here is exactly what lands on it */
+.compose-stage{
+  margin:0 0 20px;padding:20px 18px;border-radius:11px;
+  background:var(--surface-2);border:1px dashed var(--line);
+}
+.compose-stage .card{max-width:330px;margin:0 auto}
+.compose-stage .card-body{pointer-events:none}
+.stage-label{
+  font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--ink-faint);text-align:center;margin:0 0 13px;
+}
+
+.swatches{display:flex;gap:6px;flex-wrap:wrap}
+.swatch{
+  display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:999px;
+  border:1px solid var(--line);background:var(--surface-2);font-size:12.5px;
+  color:var(--ink-muted);transition:border-color .15s,color .15s,background .15s;
+}
+.swatch:hover{color:var(--ink)}
+.swatch .dot{width:9px;height:9px;border-radius:50%;flex:none}
+.swatch[aria-pressed="true"]{border-color:var(--ink-faint);background:var(--surface);color:var(--ink)}
+
+.signals{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;min-height:21px}
+.signal{
+  font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.04em;
+  padding:3px 9px;border-radius:999px;background:var(--surface-3);color:var(--ink-faint);
+}
+.signal.on{background:var(--accent-soft);color:var(--accent)}
+.guide{font-size:12px;color:var(--ink-faint);margin:7px 0 0;line-height:1.55}
+.guide code{
+  font-family:"IBM Plex Mono",monospace;font-size:11px;
+  background:var(--surface-3);padding:1.5px 5px;border-radius:4px;color:var(--ink-muted);
+}
+.sheet.open .sheet-card{transform:none}
+.sheet-card h2{font-family:"Bricolage Grotesque",sans-serif;font-size:18px;margin:0 0 3px}
+.sheet-card .hint{font-size:12.5px;color:var(--ink-muted);margin:0 0 16px}
+.field{display:block;margin-bottom:11px}
+.field span{
+  display:block;font-family:"IBM Plex Mono",monospace;font-size:10.5px;
+  letter-spacing:.07em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:5px;
+}
+.field input,.field textarea{
+  width:100%;padding:9px 11px;border-radius:7px;border:1px solid var(--line);
+  background:var(--surface-2);font-family:inherit;
+}
+.field textarea{min-height:88px;resize:vertical;line-height:1.5}
+.field input:focus,.field textarea:focus{outline:none;border-color:var(--accent);background:var(--surface)}
+.sheet-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.sheet-error{font-size:12.5px;color:var(--age-cold);margin:8px 0 0}
+
+.toast{
+  position:fixed;left:50%;bottom:28px;transform:translate(-50%,14px);z-index:70;
+  padding:9px 18px;border-radius:999px;background:var(--ink);color:var(--ground);
+  font-size:13px;font-weight:500;opacity:0;pointer-events:none;
+  transition:opacity .2s ease,transform .2s ease;
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important}
+}
+@media (max-width:640px){
+  .wrap{padding:0 14px 72px}
+  .brand{font-size:22px}
+  .top-tools{width:100%;margin-left:0;justify-content:flex-start}
+  .search{flex:1 1 140px;min-width:0}
+  .search input,.search input:focus{width:100%}
+  .wall{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
+  .board{margin:0 -14px;padding-left:14px;padding-right:14px}
+}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="top-row">
+      <h1 class="brand">Task <em>Wall</em></h1>
+      <span class="tally" id="tally"></span>
+      <div class="top-tools">
+        <div class="search">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
+          <input type="search" id="q" placeholder="Search tasks" aria-label="Search tasks">
+        </div>
+        <div class="seg" role="group" aria-label="Layout">
+          <button id="viewWall" aria-pressed="true">Wall</button>
+          <button id="viewBoard" aria-pressed="false">Board</button>
+        </div>
+        <button class="btn" id="doneToggle" aria-pressed="false">Show done</button>
+        <button class="btn btn-primary" id="addOpen">Add task</button>
+      </div>
+    </div>
+    <div class="rail" id="rail"></div>
+  </header>
+
+  <main id="stage">
+    <div class="msg" id="loading"><h2>Loading your tasks…</h2><p>Reading every list, all the way to the last page.</p></div>
+  </main>
+</div>
+
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+  <form class="sheet-card" id="addForm">
+    <h2 id="sheetTitle">Write a task worth reading</h2>
+    <p class="hint">A prefix groups it, a name in brackets assigns it. Both are optional — the card shows you what it will look like as you go.</p>
+
+    <div class="compose-stage">
+      <p class="stage-label">Your card</p>
+      <div id="previewSlot"></div>
+    </div>
+
+    <div class="field">
+      <span>Which list</span>
+      <div class="swatches" id="swatches"></div>
+    </div>
+
+    <label class="field">
+      <span>Title</span>
+      <input type="text" id="newTitle" required autocomplete="off"
+             placeholder="TIMESHEETS: Cannot edit a submitted week (emma)">
+      <div class="signals" id="signals"></div>
+      <p class="guide" id="titleGuide">Try <code>AREA: what happens (who)</code> — for example
+        <code>TIMER: stops counting after lunch (peter)</code>.</p>
+    </label>
+
+    <label class="field">
+      <span>Detail</span>
+      <textarea id="newNotes" placeholder="What you did, what happened, and what you expected instead."></textarea>
+      <p class="guide">The detail is the part you will read in three months. Give it the two or three sentences it needs.</p>
+    </label>
+
+    <p class="sheet-error" id="sheetError" hidden></p>
+    <div class="sheet-actions">
+      <button type="button" class="btn" id="addCancel">Cancel</button>
+      <button type="submit" class="btn btn-primary" id="addSubmit">Add task</button>
+    </div>
+  </form>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+
+/* ---------- demo data ------------------------------------------------- *
+ * Used only when the page is opened outside Apps Script (no google.script).
+ * Transcribed from the real board so the layout can be judged on real text. */
+var DEMO = {
+  people: ["emma","muneeb","chris","peter","lyndsey","matt","naveed","rubab",
+           "shehzad","tami","briony","walled","joe welch","lucy"],
+  lists: [
+    { id:"bugs", title:"JOBSMAN BUGS", colour:"rose", tasks:[
+      { title:"As your tax liability is over &#xA3;1000.00 HMRC would expect you to make payments on account towards this of &#xA3;2,053.20 in January and July 2025.", w:9 },
+      { title:"One Off Services must not show. (emma)", w:8 },
+      { title:"Job Manager Query: statutory deadline extend manually (muneeb)", w:8 },
+      { title:"Make live OUTBOX", w:8 },
+      { title:"Old AML form (add link to AML)", w:8 },
+      { title:"Time Sheet on the New Job Manager EDIT OR DELETE", w:8 },
+      { title:"TIMESHEETS: Don't show closed jobs in timesheet (Shehzad)", w:11 },
+      { title:"Fwd: Our new \"intern\"", w:9 },
+      { title:"TIMESHEETS: Cannot see the whole long text input note", w:12 },
+      { title:"Wrong stat date corp jobs", w:16,
+        notes:"45 distinct clients (one client has two open jobs in the set, totalling 46 rows). Statutory date is being pulled from the wrong field on migration — needs a one-off correction script plus a guard on the import." },
+      { title:"PROPOSALS: Signature block drops the second signatory (chris)", w:5 },
+      { title:"Client portal: password reset email lands in spam", w:3 }
+    ]},
+    { id:"todo", title:"JOBSMAN TODO", colour:"indigo", tasks:[
+      { title:"JM: CLIENT AUDIT LOG (partially done)", w:26,
+        notes:"add all events, ie - proposal sent by - proposal signed - services added - job scehduled - manager changed - put on hold" },
+      { title:"JM: Multiple client time and fees review (Walled)", w:24,
+        notes:"Because sometimes one client has mulitple businesses and SATR that add up." },
+      { title:"ONBOARDING: Make useful for Briony & co", w:22,
+        notes:"NEEDS lots of thought, have spoken to briony. The current flow assumes the client is already on the system, which is exactly backwards for a new enquiry." },
+      { title:"FORMER CLIENT: Delete open jobs (manual)", w:16 },
+      { title:"TIMER: Manual time updates (peter)", w:18 },
+      { title:"CIC rules etc (Lyndsey)", w:18,
+        notes:"I have a few unusual jobs, which are Llp, CIC or CIO, which the standard statutory deadline rules do not cover properly." },
+      { title:"AFTER FEE REVIEW CHECK (MATT)", w:19,
+        notes:"We have one more addition. When the job stage passes fee review, the fee needs locking so it cannot be edited downstream without a note." },
+      { title:"ATTACHMENTS ON INTERNAL MESSAGING (Naveed + Rubab)", w:18,
+        notes:"I'm trying to attach files during internal conversations about a job and there is nowhere to put them." },
+      { title:"TIMESHEETS: Cannot see the whole long text input note", w:18 },
+      { title:"Wrong stat date corp jobs", w:16,
+        notes:"45 distinct clients (one client has two open jobs in the set, totalling 46 rows)." }
+    ]},
+    { id:"shelved", title:"SHELVED", colour:"slate", tasks:[
+      { title:"GMAIL attachments to client folder?", w:23,
+        notes:"Can download be avoided? Can Workspace know about client folders directly so the attachment is filed without a round trip through someone's desktop?" },
+      { title:"MY CALLS", w:21,
+        notes:"make a slice and allow staff members to share or assign calls between themselves." },
+      { title:"QUICKBOOKS LOGIN IN MATTS NAME", w:20, notes:"How to stop this happening" },
+      { title:"TAMI: Switch on outbox for SA client emails", w:19,
+        notes:"NOTE: Email comes from resnd, is this of limited value as people reply to the wrong address anyway?" },
+      { title:"pie chart of stages (tami)", w:16 },
+      { title:"Email for Tami with time in Newt-pod (tami)", w:16 }
+    ]},
+    { id:"appsheet", title:"DB / appsheet todo", colour:"violet", tasks:[
+      { title:"just checking joe welch / chris", w:20 },
+      { title:"Partnership Tax Returns missing statutory (CHRIS)", w:19 },
+      { title:"WHATSAPP RECEIPTS", w:8 }
+    ]}
+  ]
+};
+
+/* ---------- helpers --------------------------------------------------- */
+var NAMED_ENTITIES = {
+  amp:"&", lt:"<", gt:">", quot:'"', apos:"'", nbsp:" ", pound:"£",
+  euro:"€", hellip:"…", mdash:"—", ndash:"–",
+  rsquo:"’", lsquo:"‘", ldquo:"“", rdquo:"”"
+};
+
+/* Titles pasted from HTML carry raw entities (&#xA3;1000.00). Decode by
+   regex rather than innerHTML so nothing is ever parsed as markup. */
+function decodeEntities(s){
+  if(!s || s.indexOf("&") === -1) return s || "";
+  return s.replace(/&(?:#x([0-9a-fA-F]+)|#(\d+)|([a-zA-Z][a-zA-Z0-9]*));/g,
+    function(m, hex, dec, name){
+      try{
+        if(hex) return String.fromCodePoint(parseInt(hex,16));
+        if(dec) return String.fromCodePoint(parseInt(dec,10));
+        var v = NAMED_ENTITIES[name.toLowerCase()];
+        return v === undefined ? m : v;
+      }catch(e){ return m; }
+    });
+}
+
+var CAT_STOPLIST = {fwd:1, re:1, note:1, fw:1, ps:1};
+
+/* "TIMESHEETS: Don't show closed jobs" -> category TIMESHEETS.
+   Only an all-caps or Title Case run of up to three words counts, so a
+   sentence containing a colon is left alone. */
+function parseCategory(title){
+  var m = title.match(/^([^:]{2,30}):\s+(.+)$/);
+  if(!m) return null;
+  var label = m[1].trim(), rest = m[2].trim();
+  if(!rest) return null;
+  var words = label.split(/\s+/);
+  if(words.length > 3) return null;
+  if(/[.?!,]/.test(label)) return null;
+  if(CAT_STOPLIST[label.toLowerCase()]) return null;
+  var isCaps  = label === label.toUpperCase() && /[A-Z]/.test(label);
+  var isTitle = words.every(function(w){ return /^[A-Z]/.test(w); });
+  if(!isCaps && !isTitle) return null;
+  return { label: label, rest: rest };
+}
+
+/* A trailing "(...)" is an assignee when every name in it is someone we
+   know, and a plain note otherwise — "(muneeb)" vs "(partially done)". */
+function parseTrailing(title, people){
+  var m = title.match(/\s*\(([^()]{1,44})\)\s*$/);
+  if(!m) return { title: title, assignees: [], note: null };
+  var inner = m[1].trim();
+  var stripped = title.slice(0, m.index).trim() || title;
+  var parts = inner.split(/\s*(?:\+|&|,|\/|\band\b)\s*/i)
+                   .map(function(s){ return s.trim(); })
+                   .filter(Boolean);
+  var known = parts.filter(function(p){ return people.has(p.toLowerCase()); });
+  if(parts.length && known.length === parts.length){
+    return { title: stripped, assignees: known, note: null };
+  }
+  return { title: stripped, assignees: [], note: inner };
+}
+
+var AVATAR_HUES = [346, 258, 210, 172, 36, 128, 288, 196, 14, 236];
+function hueFor(name){
+  var h = 0;
+  for(var i=0;i<name.length;i++) h = (h*31 + name.charCodeAt(i)) >>> 0;
+  return AVATAR_HUES[h % AVATAR_HUES.length];
+}
+function initials(name){
+  var p = name.trim().split(/\s+/);
+  return (p.length > 1 ? p[0][0] + p[1][0] : name.slice(0,2));
+}
+
+/* Names are typed however the reporter felt at the time — "emma", "MATT",
+   "CHRIS". Present them consistently. */
+function displayName(name){
+  return name.toLowerCase().replace(/(^|[\s'\-])([a-z])/g, function(m, lead, ch){
+    return lead + ch.toUpperCase();
+  });
+}
+
+var WEEK = 7 * 24 * 60 * 60 * 1000;
+
+/* Google paints every overdue task the same red, which tells you nothing
+   when the whole board is overdue. Grade it instead. */
+function ageOf(task, now){
+  var iso = task.due || task.updated;
+  if(!iso) return null;
+  var t = Date.parse(iso);
+  if(isNaN(t)) return null;
+  var weeks = Math.floor((now - t) / WEEK);
+  var overdue = !!task.due && t < now;
+  var heat = "cool";
+  if(weeks >= 24) heat = "cold";
+  else if(weeks >= 12) heat = "hot";
+  else if(weeks >= 4) heat = "warm";
+
+  var label;
+  if(weeks < 0){
+    label = "in " + Math.abs(weeks) + "w"; heat = "cool";
+  } else if(weeks < 1){
+    label = task.due ? "due now" : "this week";
+  } else {
+    label = weeks + "w" + (overdue ? " over" : task.due ? "" : " ago");
+  }
+  return { label: label, heat: heat, weeks: weeks };
+}
+
+function el(tag, cls, text){
+  var n = document.createElement(tag);
+  if(cls) n.className = cls;
+  if(text != null) n.textContent = text;
+  return n;
+}
+
+/* ---------- state ----------------------------------------------------- */
+var state = {
+  lists: [], people: new Set(), cards: [],
+  hidden: new Set(), query: "", showDone: false,
+  view: "wall", openId: null, live: false
+};
+
+var stage   = document.getElementById("stage");
+var railEl  = document.getElementById("rail");
+var tallyEl = document.getElementById("tally");
+var toastEl = document.getElementById("toast");
+var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function toast(text){
+  toastEl.textContent = text;
+  toastEl.classList.add("show");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(function(){ toastEl.classList.remove("show"); }, 2600);
+}
+
+/* ---------- ingest ---------------------------------------------------- */
+function ingest(board){
+  state.people = new Set((board.people || []).map(function(p){ return p.toLowerCase(); }));
+  state.lists  = board.lists || [];
+  state.cards  = [];
+  var now = Date.now();
+
+  state.lists.forEach(function(list){
+    (list.tasks || []).forEach(function(task){
+      var raw   = decodeEntities(task.title || "");
+      var trail = parseTrailing(raw, state.people);
+      var cat   = parseCategory(trail.title);
+      state.cards.push({
+        id: task.id,
+        listId: list.id,
+        listTitle: list.title,
+        colour: list.colour,
+        title: cat ? cat.rest : trail.title,
+        category: cat ? cat.label : null,
+        assignees: trail.assignees,
+        note: trail.note,
+        desc: decodeEntities(task.notes || "").trim(),
+        completed: !!task.completed,
+        age: ageOf(task, now)
+      });
+    });
+  });
+}
+
+function visibleCards(){
+  var q = state.query.trim().toLowerCase();
+  return state.cards.filter(function(c){
+    if(state.hidden.has(c.listId)) return false;
+    if(!state.showDone && c.completed) return false;
+    if(!q) return true;
+    return (c.title + " " + (c.category||"") + " " + c.desc + " " +
+            c.assignees.join(" ") + " " + (c.note||"")).toLowerCase().indexOf(q) > -1;
+  });
+}
+
+/* ---------- rendering ------------------------------------------------- */
+function buildCard(card, isPreview){
+  var wrap = el("article", "card");
+  wrap.dataset.id = card.id;
+  if(card.completed){ wrap.classList.add("is-done"); wrap.classList.add("is-struck"); }
+  if(state.openId === card.id) wrap.classList.add("is-open");
+
+  var body = el("div", "card-body");
+  body.style.setProperty("--c-bg",   "var(--t-" + card.colour + "-bg)");
+  body.style.setProperty("--c-bd",   "var(--t-" + card.colour + "-bd)");
+  body.style.setProperty("--c-chip", "var(--t-" + card.colour + "-chip)");
+  body.tabIndex = 0;
+  body.setAttribute("role", "button");
+  body.setAttribute("aria-expanded", state.openId === card.id ? "true" : "false");
+
+  var top = el("div", "card-top");
+  if(card.category) top.appendChild(el("span", "cat", card.category));
+  if(card.age){
+    var age = el("span", "age", card.age.label);
+    age.dataset.heat = card.age.heat;
+    top.appendChild(age);
+  }
+  if(top.children.length) body.appendChild(top);
+
+  var tick = el("button", "tick");
+  tick.type = "button";
+  tick.setAttribute("aria-label", (card.completed ? "Mark not done: " : "Mark done: ") + card.title);
+  tick.innerHTML =
+    '<svg viewBox="0 0 24 24" aria-hidden="true">' +
+      '<path class="tick-box" d="M5.9 4.7c3.7-.5 9.4-.4 12.9.1.9 3.6.8 10.7.2 14.2' +
+      '-3.8.8-10.3.7-13.7.1-.9-3.8-.7-10.5.4-14.2"/>' +
+      '<path class="tick-mark" pathLength="100" d="M6.1 12.1c1.5 1.2 3.1 3.5 4.6 6.4' +
+      'C13.5 12.3 17.4 6.1 23.8 -0.4"/>' +
+    '</svg>';
+  if(isPreview) tick.tabIndex = -1;
+  else tick.addEventListener("click", function(ev){ ev.stopPropagation(); toggleDone(card, wrap); });
+  body.appendChild(tick);
+  body.appendChild(el("h3", "title", card.title));
+
+  if(card.desc) body.appendChild(el("p", "desc", card.desc));
+
+  var foot = el("div", "card-foot");
+  card.assignees.forEach(function(name){
+    var pretty = displayName(name);
+    var who = el("span", "who");
+    var av  = el("span", "av", initials(pretty));
+    av.style.background = "hsl(" + hueFor(name.toLowerCase()) + " 46% 44%)";
+    who.appendChild(av);
+    who.appendChild(el("span", null, pretty));
+    foot.appendChild(who);
+  });
+  if(card.note) foot.appendChild(el("span", "note-chip", card.note));
+  if(state.view === "wall" && !isPreview) foot.appendChild(el("span", "list-tag", card.listTitle));
+  if(foot.children.length) body.appendChild(foot);
+
+  if(isPreview){
+    body.removeAttribute("role");
+    body.removeAttribute("aria-expanded");
+    body.tabIndex = -1;
+    wrap.classList.add("is-open");        // the preview always reads in full
+  } else {
+    body.addEventListener("click", function(){ openCard(card.id); });
+    body.addEventListener("keydown", function(ev){
+      if(ev.key === "Enter" || ev.key === " "){ ev.preventDefault(); openCard(card.id); }
+    });
+  }
+
+  wrap.appendChild(body);
+  return wrap;
+}
+
+function render(){
+  var cards = visibleCards();
+  updateRail();
+
+  var shown = cards.length, total = state.cards.length;
+  tallyEl.textContent = shown === total
+    ? total + " tasks"
+    : shown + " of " + total + " tasks";
+
+  stage.textContent = "";
+
+  if(!cards.length){
+    var m = el("div", "msg");
+    m.appendChild(el("h2", null, state.query ? "Nothing matches that" : "Nothing to show"));
+    m.appendChild(el("p", null, state.query
+      ? "Try a shorter search, or clear a filter."
+      : "Every list is filtered out, or everything here is done."));
+    stage.appendChild(m);
+    return;
+  }
+
+  if(state.view === "board") renderBoard(cards);
+  else renderWall(cards);
+}
+
+function renderWall(cards){
+  var wall = el("div", "wall");
+  wall.id = "wall";
+  cards.forEach(function(c){ wall.appendChild(buildCard(c)); });
+  stage.appendChild(wall);
+  reflow(false);
+}
+
+function renderBoard(cards){
+  var board = el("div", "board");
+  state.lists.forEach(function(list){
+    if(state.hidden.has(list.id)) return;
+    var mine = cards.filter(function(c){ return c.listId === list.id; });
+    var col = el("div", "column");
+    col.style.setProperty("--col-bd", "var(--t-" + list.colour + "-bd)");
+
+    var head = el("div", "column-head");
+    head.appendChild(el("span", "dot"));
+    head.appendChild(el("h2", null, list.title));
+    head.appendChild(el("span", "n", String(mine.length)));
+    col.appendChild(head);
+
+    mine.forEach(function(c){ col.appendChild(buildCard(c)); });
+    board.appendChild(col);
+  });
+  stage.appendChild(board);
+}
+
+/* ---------- masonry + FLIP -------------------------------------------- */
+function spanFor(cardEl, rowH, gap){
+  var h = cardEl.firstElementChild.getBoundingClientRect().height;
+  return Math.max(1, Math.ceil((h + gap) / (rowH + gap)));
+}
+
+/* Recompute row spans, then slide every card that moved from where it was
+   to where it now is. Without this an expanding card makes the wall jump. */
+function reflow(animate){
+  var wall = document.getElementById("wall");
+  if(!wall) return;
+
+  var cs   = getComputedStyle(wall);
+  var rowH = parseFloat(cs.gridAutoRows) || 4;
+  var gap  = parseFloat(cs.rowGap) || 16;
+  var items = Array.prototype.slice.call(wall.children);
+
+  var before = (animate && !reduceMotion)
+    ? items.map(function(it){ return it.getBoundingClientRect(); })
+    : null;
+
+  items.forEach(function(it){
+    it.style.gridRowEnd = "span " + spanFor(it, rowH, gap);
+  });
+
+  if(!before) return;
+
+  items.forEach(function(it, i){
+    var a = before[i], b = it.getBoundingClientRect();
+    var dx = a.left - b.left, dy = a.top - b.top;
+    if(!dx && !dy) return;
+    it.style.transition = "none";
+    it.style.transform  = "translate(" + dx + "px," + dy + "px)";
+  });
+  wall.getBoundingClientRect();           // flush
+  requestAnimationFrame(function(){
+    items.forEach(function(it){
+      it.style.transition = "transform .34s cubic-bezier(.2,.8,.25,1)";
+      it.style.transform  = "translate(0,0)";
+    });
+  });
+}
+
+function openCard(id){
+  var next = state.openId === id ? null : id;
+  state.openId = next;
+
+  var wall = document.getElementById("wall");
+  Array.prototype.forEach.call(document.querySelectorAll(".card"), function(c){
+    var on = c.dataset.id === next;
+    c.classList.toggle("is-open", on);
+    var b = c.firstElementChild;
+    if(b) b.setAttribute("aria-expanded", on ? "true" : "false");
+  });
+
+  if(wall){
+    // Let the max-height transition run, reflowing alongside it.
+    var start = performance.now();
+    (function step(now){
+      reflow(false);
+      if(now - start < 320) requestAnimationFrame(step);
+    })(start);
+  }
+}
+
+/* ---------- filter rail ----------------------------------------------- */
+function updateRail(){
+  railEl.textContent = "";
+  state.lists.forEach(function(list){
+    var count = state.cards.filter(function(c){
+      return c.listId === list.id && (state.showDone || !c.completed);
+    }).length;
+    var on = !state.hidden.has(list.id);
+
+    var b = el("button", "chip-filter");
+    b.type = "button";
+    b.setAttribute("aria-pressed", on ? "true" : "false");
+    var dot = el("span", "dot");
+    dot.style.background = "var(--t-" + list.colour + "-bd)";
+    b.appendChild(dot);
+    b.appendChild(el("span", null, list.title));
+    b.appendChild(el("span", "n", String(count)));
+    b.addEventListener("click", function(){
+      if(state.hidden.has(list.id)) state.hidden.delete(list.id);
+      else state.hidden.add(list.id);
+      render();
+    });
+    railEl.appendChild(b);
+  });
+
+  if(state.hidden.size){
+    railEl.appendChild(el("span", "rail-sep"));
+    var clear = el("button", "chip-filter", "Show all lists");
+    clear.type = "button";
+    clear.setAttribute("aria-pressed", "true");
+    clear.addEventListener("click", function(){ state.hidden.clear(); render(); });
+    railEl.appendChild(clear);
+  }
+}
+
+/* ---------- backend --------------------------------------------------- */
+var api = {
+  live: typeof google !== "undefined" && google.script && google.script.run,
+
+  load: function(){
+    var self = this;
+    return new Promise(function(resolve, reject){
+      if(!self.live){
+        // Demo mode: turn "weeks ago" into real due dates.
+        var now = Date.now(), n = 0;
+        var board = {
+          people: DEMO.people,
+          lists: DEMO.lists.map(function(l){
+            return {
+              id: l.id, title: l.title, colour: l.colour,
+              tasks: l.tasks.map(function(t){
+                return {
+                  id: l.id + "-" + (n++),
+                  title: t.title, notes: t.notes || "",
+                  completed: false,
+                  due: new Date(now - t.w * WEEK).toISOString(),
+                  updated: new Date(now - t.w * WEEK).toISOString()
+                };
+              })
+            };
+          })
+        };
+        setTimeout(function(){ resolve(board); }, 220);
+        return;
+      }
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler(function(e){ reject(e); })
+        .getBoard();
+    });
+  },
+
+  add: function(listId, title, notes){
+    var self = this;
+    return new Promise(function(resolve, reject){
+      if(!self.live){ resolve({ success:true, demo:true }); return; }
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler(reject)
+        .addTask(listId, title, notes);
+    });
+  },
+
+  setStatus: function(listId, taskId, completed){
+    var self = this;
+    return new Promise(function(resolve, reject){
+      if(!self.live){ resolve({ success:true, demo:true }); return; }
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler(reject)
+        .setTaskStatus(listId, taskId, completed);
+    });
+  }
+};
+
+function toggleDone(card, cardEl){
+  var wanted = !card.completed;
+  card.completed = wanted;                       // optimistic
+  if(state.openId === card.id) state.openId = null;
+
+  // Re-rendering immediately would destroy the element mid-stroke, so the
+  // state change is applied in place and the board rearranges once the ink
+  // has dried.
+  var dwell = reduceMotion ? 0 : 460;
+  if(cardEl){
+    cardEl.classList.toggle("is-done", wanted);          // the tick draws now
+    if(wanted){
+      // the strike follows the pen rather than racing it
+      setTimeout(function(){ cardEl.classList.add("is-struck"); }, reduceMotion ? 0 : 250);
+    } else {
+      cardEl.classList.remove("is-struck");
+    }
+    var nib = cardEl.querySelector(".tick");
+    var body = cardEl.querySelector(".card-body");
+    if(nib){
+      nib.classList.remove("inking"); void nib.offsetWidth; nib.classList.add("inking");
+      nib.setAttribute("aria-label", (wanted ? "Mark not done: " : "Mark done: ") + card.title);
+    }
+    if(body){
+      body.classList.remove("settling"); void body.offsetWidth; body.classList.add("settling");
+    }
+  }
+
+  var leaves = wanted && !state.showDone;
+  setTimeout(function(){
+    if(cardEl && leaves){
+      cardEl.classList.add("is-leaving");
+      setTimeout(render, 180);
+    } else {
+      render();
+    }
+  }, dwell);
+
+  api.setStatus(card.listId, card.id, wanted).then(function(res){
+    if(res && res.success === false){ throw new Error(res.error); }
+    if(!res || !res.demo) toast(wanted ? "Marked done" : "Reopened");
+  }).catch(function(err){
+    card.completed = !wanted;                    // roll back
+    render();
+    toast("Could not update that task");
+    if(window.console) console.error(err);
+  });
+}
+
+/* ---------- add sheet ------------------------------------------------- */
+var sheet = document.getElementById("sheet");
+var addForm = document.getElementById("addForm");
+var newTitle = document.getElementById("newTitle");
+var newNotes = document.getElementById("newNotes");
+var sheetError = document.getElementById("sheetError");
+var addSubmit = document.getElementById("addSubmit");
+
+var previewSlot = document.getElementById("previewSlot");
+var swatchWrap  = document.getElementById("swatches");
+var signalsEl   = document.getElementById("signals");
+var titleGuide  = document.getElementById("titleGuide");
+var GUIDE_DEFAULT = 'Try <code>AREA: what happens (who)</code> — for example ' +
+                    '<code>TIMER: stops counting after lunch (peter)</code>.';
+var composeListId = null;
+
+/* The card the current input would produce, shaped exactly like a real one. */
+function composeCard(){
+  var list = state.lists.filter(function(l){ return l.id === composeListId; })[0] || state.lists[0];
+  var typed = newTitle.value.trim();
+  var trail = parseTrailing(typed || "Your title, as it will read", state.people);
+  var cat   = parseCategory(trail.title);
+  return {
+    id: "__preview__",
+    listId: list ? list.id : "",
+    listTitle: list ? list.title : "",
+    colour: list ? list.colour : "slate",
+    title: cat ? cat.rest : trail.title,
+    category: cat ? cat.label : null,
+    assignees: trail.assignees,
+    note: trail.note,
+    desc: newNotes.value.trim() || (typed ? "" : "And the detail underneath, in full."),
+    completed: false,
+    age: { label: "just now", heat: "cool", weeks: 0 },
+    empty: !typed
+  };
+}
+
+function refreshCompose(){
+  var c = composeCard();
+
+  previewSlot.textContent = "";
+  var node = buildCard(c, true);
+  if(c.empty) node.style.opacity = ".48";
+  previewSlot.appendChild(node);
+
+  signalsEl.textContent = "";
+  var sig = [];
+  if(c.category) sig.push(["Area · " + c.category, true]);
+  if(c.assignees.length){
+    sig.push(["For · " + c.assignees.map(displayName).join(" & "), true]);
+  }
+  if(c.note) sig.push(["Reads as a note · " + c.note, false]);
+  if(!sig.length && !c.empty) sig.push(["No area or name — that is fine too", false]);
+  sig.forEach(function(pair){
+    signalsEl.appendChild(el("span", "signal" + (pair[1] ? " on" : ""), pair[0]));
+  });
+
+  var len = newTitle.value.trim().length;
+  if(len > 72){
+    titleGuide.textContent = len + " characters. Long titles are hard to scan on the wall — " +
+                             "the detail box below has room for the rest.";
+  } else {
+    titleGuide.innerHTML = GUIDE_DEFAULT;
+  }
+}
+
+function buildSwatches(){
+  swatchWrap.textContent = "";
+  state.lists.forEach(function(list){
+    var b = el("button", "swatch");
+    b.type = "button";
+    b.setAttribute("aria-pressed", list.id === composeListId ? "true" : "false");
+    var d = el("span", "dot");
+    d.style.background = "var(--t-" + list.colour + "-bd)";
+    b.appendChild(d);
+    b.appendChild(el("span", null, list.title));
+    b.addEventListener("click", function(){
+      composeListId = list.id;
+      buildSwatches();
+      refreshCompose();
+    });
+    swatchWrap.appendChild(b);
+  });
+}
+
+function openSheet(){
+  if(!composeListId && state.lists.length) composeListId = state.lists[0].id;
+  buildSwatches();
+  refreshCompose();
+  sheet.classList.add("open");
+  sheetError.hidden = true;
+  setTimeout(function(){ newTitle.focus(); }, 60);
+}
+function closeSheet(){
+  sheet.classList.remove("open");
+  document.getElementById("addOpen").focus();
+}
+
+document.getElementById("addOpen").addEventListener("click", openSheet);
+document.getElementById("addCancel").addEventListener("click", closeSheet);
+sheet.addEventListener("click", function(ev){ if(ev.target === sheet) closeSheet(); });
+
+newTitle.addEventListener("input", refreshCompose);
+newNotes.addEventListener("input", refreshCompose);
+
+addForm.addEventListener("submit", function(ev){
+  ev.preventDefault();
+  var title = newTitle.value.trim();
+  if(!title) return;
+
+  addSubmit.disabled = true;
+  addSubmit.textContent = "Adding…";
+  sheetError.hidden = true;
+
+  api.add(composeListId, title, newNotes.value.trim()).then(function(res){
+    if(res && res.success === false) throw new Error(res.error || "Unknown error");
+    newTitle.value = ""; newNotes.value = "";
+    refreshCompose();
+    closeSheet();
+    toast("Task added");
+    if(api.live) boot();
+  }).catch(function(err){
+    sheetError.textContent = String((err && err.message) || err);
+    sheetError.hidden = false;
+  }).then(function(){
+    addSubmit.disabled = false;
+    addSubmit.textContent = "Add task";
+  });
+});
+
+/* ---------- controls -------------------------------------------------- */
+var qInput = document.getElementById("q");
+var qTimer;
+qInput.addEventListener("input", function(){
+  clearTimeout(qTimer);
+  qTimer = setTimeout(function(){ state.query = qInput.value; render(); }, 120);
+});
+
+document.getElementById("doneToggle").addEventListener("click", function(){
+  state.showDone = !state.showDone;
+  this.setAttribute("aria-pressed", state.showDone ? "true" : "false");
+  this.textContent = state.showDone ? "Hide done" : "Show done";
+  render();
+});
+
+function setView(view){
+  state.view = view;
+  document.getElementById("viewWall").setAttribute("aria-pressed", view === "wall" ? "true" : "false");
+  document.getElementById("viewBoard").setAttribute("aria-pressed", view === "board" ? "true" : "false");
+  render();
+}
+document.getElementById("viewWall").addEventListener("click", function(){ setView("wall"); });
+document.getElementById("viewBoard").addEventListener("click", function(){ setView("board"); });
+
+document.addEventListener("keydown", function(ev){
+  if(ev.key === "Escape"){
+    if(sheet.classList.contains("open")) closeSheet();
+    else if(state.openId){ openCard(state.openId); }
+  }
+  if(ev.key === "/" && document.activeElement !== qInput &&
+     document.activeElement.tagName !== "TEXTAREA" &&
+     document.activeElement.tagName !== "INPUT"){
+    ev.preventDefault(); qInput.focus();
+  }
+});
+
+var resizeTimer;
+window.addEventListener("resize", function(){
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(function(){ reflow(false); }, 90);
+});
+
+if(document.fonts && document.fonts.ready){
+  document.fonts.ready.then(function(){ reflow(false); });
+}
+
+/* ---------- boot ------------------------------------------------------ */
+function boot(){
+  api.load().then(function(board){
+    if(!board || !board.lists){ throw new Error("No lists came back."); }
+    ingest(board);
+    if(!api.live){
+      var b = el("div", "banner");
+      b.appendChild(el("strong", null, "Preview."));
+      b.appendChild(el("span", null,
+        "Sample tasks transcribed from your screenshots. Deployed in Apps Script this reads your real lists."));
+      document.querySelector(".wrap").insertBefore(b, stage);
+    }
+    render();
+  }).catch(function(err){
+    stage.textContent = "";
+    var m = el("div", "msg error");
+    m.appendChild(el("h2", null, "Could not load your tasks"));
+    m.appendChild(el("p", null, String((err && err.message) || err)));
+    stage.appendChild(m);
+    if(window.console) console.error(err);
+  });
+}
+
+boot();
+</script>
