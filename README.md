@@ -40,10 +40,12 @@ inventing a colleague.
 
 - **Wall** — a masonry wall of every task, reflowing as cards expand.
 - **Board** — one column per list, closer to the Google Calendar side panel.
-- **Looking back** — the last five *working* days, each column listing what was
-  closed that day and why. Weekends are skipped rather than shown empty. It is
-  separated from Wall and Board in the control and sits on its own recessed
-  ground, because it shows the past and the other two show what is outstanding.
+- **Looking back** — seven consecutive days ending on today, oldest first, so
+  the week reads left to right the way a diary does. Weekends are included: an
+  empty Saturday is information too, and they are dimmed rather than dropped.
+  Each column lists what was closed that day and why. It is separated from Wall
+  and Board in the control and sits on its own recessed ground, because it shows
+  the past and the other two show what is outstanding.
 - Descriptions sit at low opacity, clamped to two lines. Hovering lifts them;
   clicking a card opens it fully and the neighbouring cards slide out of the
   way rather than jumping.
@@ -77,6 +79,14 @@ Everyone else gets a read-and-add board. Because comments live in the task's
 own notes rather than a side table, they survive losing this script and are
 readable from any Google Tasks client.
 
+## Every task gets a due date
+
+The compose form's due date defaults to **today**. A task with no due date is
+effectively invisible in the Google apps — you cannot even tell when it was
+added — so the default is a date rather than nothing. Push it out if it can
+wait. `dueStamp_` sends midnight UTC, since the API keeps the date and drops
+any time of day.
+
 ## New tasks land in UNSORTED
 
 `CONFIG.INTAKE_LIST` is `UNSORTED`, and the compose form defaults to it, so a
@@ -85,9 +95,36 @@ later from the board.
 
 ## Handing a task to Claude
 
-An open card offers a **copy icon** — the full brief (title, list, area,
-assignee, age, detail, comments and links) on the clipboard — and **Ask
-Claude**, which opens a new conversation with that brief prefilled. The link
+An open card offers a **copy icon** and **Ask Claude**. Both produce the same
+brief, which opens by saying what it is and then gives labelled fields:
+
+    This is a task from my task list that I would like help with.
+
+    Title: Don't show closed jobs in timesheet
+    Category: TIMESHEETS
+    Requester: Shehzad
+    List: JOBSMAN BUGS
+    Was due: 10 Jun 2026 (11 weeks ago)
+    Status: still open
+
+    Details:
+    ...
+
+    Comments from colleagues:
+    - matt (24 Aug): ...
+
+    Links:
+    - Original message: https://mail.google.com/...
+
+    Background:
+    Jobsman is the practice management system we use at TS Partners...
+
+The closing paragraph comes from `CONFIG.CLAUDE_CONTEXT`, so the standing
+context goes with every task instead of being retyped. A closed task reports
+`Status: closed on 25 Aug 2026` and `Closed because: …` instead.
+
+The Ask Claude link has a URL length limit, so when a brief is too long the
+*details* are trimmed and every labelled field survives. The link
 carries a truncated version because URLs have limits; the copy button carries
 everything.
 

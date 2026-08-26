@@ -141,6 +141,7 @@ function getBoard() {
   return {
     lists: lists,
     people: CONFIG.PEOPLE,
+    context: CONFIG.CLAUDE_CONTEXT || '',
     viewer: viewer_(),
     fetchedAt: new Date().toISOString()
   };
@@ -272,7 +273,7 @@ function moveTask(listId, taskId, direction) {
  * Add a task to the chosen list. Falls back to the intake list — creating it
  * if need be — when the caller names a list that no longer exists.
  */
-function addTask(listId, title, notes) {
+function addTask(listId, title, notes, due) {
   try {
     title = (title || '').trim();
     if (!title) return { success: false, error: 'A title is required.' };
@@ -295,8 +296,11 @@ function addTask(listId, title, notes) {
     if ((notes || '').trim()) body += notes.trim() + '\n\n';
     body += reporter ? ('Reported by ' + reporter + ' on ' + stamp) : ('Reported ' + stamp);
 
+    // Every task gets a due date, defaulting to today. A task with no due date
+    // is effectively invisible in the Google apps — you cannot even tell when
+    // it was added. The API keeps the date and discards any time of day.
     const created = Tasks.Tasks.insert(
-      { title: title, notes: body, status: 'needsAction' },
+      { title: title, notes: body, status: 'needsAction', due: dueStamp_(due) },
       listId
     );
     return { success: true, task: toCard_(created, listId) };
@@ -305,6 +309,18 @@ function addTask(listId, title, notes) {
     Logger.log('addTask failed: ' + e);
     return { success: false, error: String(e.message || e) };
   }
+}
+
+/**
+ * An RFC 3339 timestamp for a yyyy-mm-dd date, or for today when none is
+ * given. The Tasks API keeps the date and drops the time, so midnight UTC is
+ * the conventional thing to send.
+ */
+function dueStamp_(date) {
+  const iso = /^\d{4}-\d{2}-\d{2}$/.test(date || '')
+    ? date
+    : Utilities.formatDate(new Date(), CONFIG.TIMEZONE || 'Europe/London', 'yyyy-MM-dd');
+  return iso + 'T00:00:00.000Z';
 }
 
 /**

@@ -413,7 +413,10 @@ button{background:none;border:0;cursor:pointer}
   margin-left:7px;
 }
 .week-head.today h2{color:var(--accent)}
-.column.week{flex:1 1 210px;min-width:0}
+.week-head.today .date{color:var(--accent)}
+.column.week.weekend .week-head h2{color:var(--ink-faint)}
+.column.week.weekend .day-empty{opacity:.6}
+.column.week{flex:1 1 140px;min-width:0}
 .column.week .card.is-struck .card-body{opacity:.9}
 .column.week .card.is-struck .title{text-decoration-color:color-mix(in srgb,var(--pen) 35%,transparent)}
 .day-empty{
@@ -551,6 +554,7 @@ button{background:none;border:0;cursor:pointer}
   display:block;font-family:var(--font-mono);font-size:10.5px;
   letter-spacing:.07em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:5px;
 }
+.field input[type="date"]{width:auto;min-width:170px}
 .field input,.field textarea{
   width:100%;padding:9px 11px;border-radius:7px;border:1px solid var(--line);
   background:var(--surface-2);font-family:inherit;
@@ -669,6 +673,13 @@ button{background:none;border:0;cursor:pointer}
     </label>
 
     <label class="field">
+      <span>Due</span>
+      <input type="date" id="newDue">
+      <p class="guide">Defaults to today, so it is always visible and you can
+        see when it was added. Push it out if it can wait.</p>
+    </label>
+
+    <label class="field">
       <span>Detail</span>
       <textarea id="newNotes" placeholder="What you did, what happened, and what you expected instead."></textarea>
       <p class="guide">The detail is the part you will read in three months. Give it the two or three sentences it needs.</p>
@@ -715,7 +726,7 @@ var DEMO = {
       { title:"AML form link 404s from the client portal", w:5, dAgo:2 },
       { title:"PROPOSALS: signature block spacing (chris)", w:4, dAgo:3,
         why:"duplicate of the second-signatory bug" },
-      { title:"Outbox retry loop on bounced addresses", w:9, dAgo:4,
+      { title:"Outbox retry loop on bounced addresses", w:9, dAgo:5,
         why:"fixed — capped at three attempts then flags the client" }
     ]},
     { id:"todo", title:"JOBSMAN TODO", colour:"indigo", tasks:[
@@ -886,7 +897,7 @@ var state = {
   lists: [], people: new Set(), cards: [],
   hidden: new Set(), query: "", showDone: false,
   view: "wall", openId: null, live: false,
-  viewer: { email: "", isSenior: false }
+  viewer: { email: "", isSenior: false }, context: ""
 };
 
 /* Preferences persist so the board looks the same every time it opens —
@@ -967,6 +978,7 @@ function ingest(board){
   state.people = new Set((board.people || []).map(function(p){ return p.toLowerCase(); }));
   state.lists  = board.lists || [];
   state.viewer = board.viewer || { email: "", isSenior: false };
+  state.context = board.context || "";
   state.cards  = [];
   var now = Date.now();
 
@@ -990,6 +1002,7 @@ function ingest(board){
         }),
         links: task.links || [],
         closeNote: task.closeNote || null,
+        due: task.due || null,
         completedAt: task.completedAt || null,
         completed: !!task.completed,
         age: ageOf(task, now)
@@ -1215,10 +1228,9 @@ function buildExtra(card){
   ask.target = "_blank";
   ask.rel = "noopener noreferrer";
   ask.textContent = "Ask Claude";
-  // Long briefs blow past what a URL can carry, so the link takes a summary
-  // and the copy button takes the lot.
-  ask.href = "https://claude.ai/new?q=" +
-             encodeURIComponent(claudeBrief(card).slice(0, 5500));
+  // A long brief blows past what a URL can carry. Trim the details rather
+  // than the tail, so the labelled fields and the background always survive.
+  ask.href = "https://claude.ai/new?q=" + encodeURIComponent(briefForUrl(card));
   actions.appendChild(ask);
 
   if(state.viewer.isSenior){
@@ -1270,28 +1282,77 @@ function undoToday(card, backToTitle){
     : (moveCardLocally(card, back), render());
 }
 
-/* A self-contained brief, so a conversation can start from the card alone. */
+function longDate(iso){
+  var t = Date.parse(iso);
+  if(isNaN(t)) return null;
+  var d = new Date(t);
+  return d.getDate() + " " + MONTHS[d.getMonth()] + " " + d.getFullYear();
+}
+
+/* A brief that opens by saying what it is, then gives the facts as labelled
+   fields — so a conversation can start from the card alone, without you
+   retyping the context every time. */
 function claudeBrief(card){
-  var out = ["# " + card.title];
-  var meta = [];
-  if(card.listTitle) meta.push("List: " + card.listTitle);
-  if(card.category)  meta.push("Area: " + card.category);
-  if(card.assignees.length) meta.push("For: " + card.assignees.map(displayName).join(", "));
-  if(card.note)      meta.push("Note: " + card.note);
-  if(card.age)       meta.push("Age: " + card.age.label);
-  if(meta.length) out.push(meta.join("\n"));
-  if(card.desc) out.push("## Detail\n" + card.desc);
+  var out = ["This is a task from my task list that I would like help with."];
+
+  var fields = [];
+  fields.push("Title: " + card.title);
+  if(card.category) fields.push("Category: " + card.category.toUpperCase());
+  if(card.assignees.length){
+    fields.push("Requester: " + card.assignees.map(displayName).join(", "));
+  }
+  if(card.listTitle) fields.push("List: " + card.listTitle);
+
+  var due = card.due ? longDate(card.due) : null;
+  if(due){
+    var overdue = card.age && card.age.weeks > 0;
+    fields.push("Was due: " + due +
+      (overdue ? " (" + card.age.weeks + " weeks ago)" : ""));
+  } else {
+    fields.push("Was due: no date set");
+  }
+
+  if(card.completed){
+    var on = card.completedAt ? longDate(card.completedAt) : null;
+    fields.push("Status: closed" + (on ? " on " + on : ""));
+    if(card.closeNote) fields.push("Closed because: " + card.closeNote.text);
+  } else {
+    fields.push("Status: still open");
+  }
+  if(card.note) fields.push("Also noted: " + card.note);
+
+  out.push(fields.join("\n"));
+
+  out.push("Details:\n" + (card.desc || "(none written down)"));
+
   if((card.comments || []).length){
-    out.push("## Comments\n" + card.comments.map(function(c){
-      return "- " + c.who + " (" + c.when + "): " + c.text;
+    out.push("Comments from colleagues:\n" + card.comments.map(function(c){
+      return "- " + displayName(c.who) + " (" + c.when + "): " + c.text;
     }).join("\n"));
   }
   if((card.links || []).length){
-    out.push("## Links\n" + card.links.map(function(l){
+    out.push("Links:\n" + card.links.map(function(l){
       return "- " + (l.description || l.type) + ": " + l.link;
     }).join("\n"));
   }
+  if(state.context) out.push("Background:\n" + state.context);
+
   return out.join("\n\n");
+}
+
+var URL_BRIEF_LIMIT = 5500;
+
+function briefForUrl(card){
+  var full = claudeBrief(card);
+  if(full.length <= URL_BRIEF_LIMIT) return full;
+
+  // Shorten the free text, keeping every labelled field intact.
+  var room = URL_BRIEF_LIMIT - (full.length - (card.desc || "").length) - 40;
+  var trimmed = Object.create(card);
+  trimmed.desc = room > 200
+    ? (card.desc || "").slice(0, room) + "\n\n[…trimmed to fit the link — use the copy button for the full text]"
+    : "[too long for a link — use the copy button for the full text]";
+  return claudeBrief(trimmed);
 }
 
 function copyText(text){
@@ -1348,15 +1409,16 @@ function renderWall(cards){
   reflow(false);
 }
 
-/* The last five working days, most recent first. Weekends are skipped
-   rather than shown empty — they are not missing days, they are days off. */
-function lastWeekdays(n){
+/* Seven consecutive days ending on today, oldest first — so the week reads
+   left to right the way a diary does, and today is where it stops. Weekends
+   are included: an empty Saturday is information too. */
+function lastSevenDays(){
   var out = [], d = new Date();
   d.setHours(0, 0, 0, 0);
-  while(out.length < n){
-    var day = d.getDay();
-    if(day !== 0 && day !== 6) out.push(new Date(d));
-    d.setDate(d.getDate() - 1);
+  d.setDate(d.getDate() - 6);
+  for(var i = 0; i < 7; i++){
+    out.push(new Date(d));
+    d.setDate(d.getDate() + 1);
   }
   return out;
 }
@@ -1379,14 +1441,14 @@ function renderWeek(){
     (byDay[key] = byDay[key] || []).push(c);
   });
 
-  var days = lastWeekdays(5);
+  var days = lastSevenDays();
   var todayKey = new Date().toDateString();
 
   var shell = el("div", "lookback");
   var bar = el("div", "lookback-bar");
   bar.appendChild(el("h2", null, "Looking back"));
   bar.appendChild(el("p", null,
-    "Closed work over the last five working days. Nothing here is outstanding."));
+    "Closed work over the last seven days, ending today. Nothing here is outstanding."));
   shell.appendChild(bar);
 
   var board = el("div", "board");
@@ -1398,8 +1460,11 @@ function renderWeek(){
 
     var head = el("div", "column-head week-head");
     if(key === todayKey) head.classList.add("today");
-    head.appendChild(el("h2", null, key === todayKey ? "Today" : DAY_NAMES[day.getDay()]));
-    head.appendChild(el("span", "date", day.getDate() + " " + MONTHS[day.getMonth()]));
+    var dow = day.getDay();
+    if(dow === 0 || dow === 6) col.classList.add("weekend");
+    head.appendChild(el("h2", null, DAY_NAMES[day.getDay()]));
+    head.appendChild(el("span", "date", day.getDate() + " " + MONTHS[day.getMonth()] +
+                                        (key === todayKey ? " · today" : "")));
     head.appendChild(el("span", "n", String(mine.length)));
     col.appendChild(head);
 
@@ -1415,8 +1480,8 @@ function renderWeek(){
   stage.appendChild(shell);
 
   var total = closed.length;
-  tallyEl.textContent = total === 1 ? "1 task closed this week"
-                                    : total + " tasks closed this week";
+  tallyEl.textContent = total === 1 ? "1 task closed in the last seven days"
+                                    : total + " tasks closed in the last seven days";
 }
 
 function renderBoard(cards){
@@ -1550,19 +1615,17 @@ var api = {
         // Demo mode: turn "weeks ago" into real due dates, and place closed
         // work on real working days so the Week view has something to show.
         var now = Date.now(), n = 0;
-        var weekdaysAgo = function(k){
+        var weekdaysAgo = function(k){          // k calendar days back
           var d = new Date();
           d.setHours(14, 30, 0, 0);
-          var stepped = 0;
-          while(stepped < k){
-            d.setDate(d.getDate() - 1);
-            var day = d.getDay();
-            if(day !== 0 && day !== 6) stepped++;
-          }
+          d.setDate(d.getDate() - k);
           return d.toISOString();
         };
         var board = {
           people: DEMO.people,
+          context: "Jobsman is the practice management system we use at TS " +
+                   "Partners, a UK accountancy firm. Tasks on this board are " +
+                   "bugs and improvements for it, reported by colleagues.",
           // the preview shows the senior view so the extra controls are visible
           viewer: { email: "you@tspartners.co.uk", isSenior: true },
           lists: DEMO.lists.map(function(l){
@@ -1597,14 +1660,14 @@ var api = {
     });
   },
 
-  add: function(listId, title, notes){
+  add: function(listId, title, notes, due){
     var self = this;
     return new Promise(function(resolve, reject){
       if(!self.live){ resolve({ success:true, demo:true }); return; }
       google.script.run
         .withSuccessHandler(resolve)
         .withFailureHandler(reject)
-        .addTask(listId, title, notes);
+        .addTask(listId, title, notes, due);
     });
   },
 
@@ -1725,6 +1788,14 @@ var sheet = document.getElementById("sheet");
 var addForm = document.getElementById("addForm");
 var newTitle = document.getElementById("newTitle");
 var newNotes = document.getElementById("newNotes");
+var newDue = document.getElementById("newDue");
+
+function todayISO(){
+  var d = new Date();
+  return d.getFullYear() + "-" +
+         String(d.getMonth() + 1).padStart(2, "0") + "-" +
+         String(d.getDate()).padStart(2, "0");
+}
 var sheetError = document.getElementById("sheetError");
 var addSubmit = document.getElementById("addSubmit");
 
@@ -1742,6 +1813,7 @@ function composeCard(){
   var typed = newTitle.value.trim();
   var trail = parseTrailing(typed || "Your title, as it will read", state.people);
   var cat   = parseCategory(trail.title);
+  var dueIso = (newDue.value || todayISO()) + "T00:00:00.000Z";
   return {
     id: "__preview__",
     listId: list ? list.id : "",
@@ -1753,7 +1825,8 @@ function composeCard(){
     note: trail.note,
     desc: newNotes.value.trim() || (typed ? "" : "And the detail underneath, in full."),
     completed: false,
-    age: { label: "just now", heat: "cool", weeks: 0 },
+    due: dueIso,
+    age: ageOf({ due: dueIso }, Date.now()),
     empty: !typed
   };
 }
@@ -1807,6 +1880,7 @@ function buildSwatches(){
 }
 
 function openSheet(){
+  if(!newDue.value) newDue.value = todayISO();
   if(!composeListId && state.lists.length){
     var intake = state.lists.filter(function(l){ return l.title === INTAKE_TITLE; })[0];
     composeListId = (intake || state.lists[0]).id;
@@ -1828,6 +1902,7 @@ sheet.addEventListener("click", function(ev){ if(ev.target === sheet) closeSheet
 
 newTitle.addEventListener("input", refreshCompose);
 newNotes.addEventListener("input", refreshCompose);
+newDue.addEventListener("change", refreshCompose);
 
 addForm.addEventListener("submit", function(ev){
   ev.preventDefault();
@@ -1838,9 +1913,9 @@ addForm.addEventListener("submit", function(ev){
   addSubmit.textContent = "Adding…";
   sheetError.hidden = true;
 
-  api.add(composeListId, title, newNotes.value.trim()).then(function(res){
+  api.add(composeListId, title, newNotes.value.trim(), newDue.value).then(function(res){
     if(res && res.success === false) throw new Error(res.error || "Unknown error");
-    newTitle.value = ""; newNotes.value = "";
+    newTitle.value = ""; newNotes.value = ""; newDue.value = todayISO();
     refreshCompose();
     closeSheet();
     toast("Task added");

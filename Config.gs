@@ -34,6 +34,13 @@ const CONFIG = {
     'lucy@tspartners.co.uk'
   ],
 
+  // Sent at the end of every "Ask Claude" brief so a conversation starts with
+  // the standing context instead of you retyping it. Keep it short.
+  CLAUDE_CONTEXT:
+    'Jobsman is the practice management system we use at TS Partners, a UK ' +
+    'accountancy firm. Tasks on this board are bugs and improvements for it, ' +
+    'reported by colleagues.',
+
   // Names recognised in a trailing "(...)" and shown as an assignee chip.
   // Anything unrecognised renders as a plain note chip instead.
   PEOPLE: [
