@@ -171,18 +171,50 @@ just an honest error.
 **Lesson.** Reading the reference for the one parameter you came for is not
 reading the reference. The bug I missed was three lines below the one I found.
 
-## 11. Open question I could not settle
+## 11. The last unverified thing, verified
 
-The Apps Script advanced service documents itself only as using "the same
-objects, methods, and parameters as the public API", and points at a separate
-page — *How method signatures are determined* — that I have not seen.
+Lucy sent *How method signatures are determined*. The rule is that an Apps
+Script advanced-service call takes, in order: the request body, then path
+parameters as individual arguments in the order they appear in the endpoint
+URL, then a media Blob, then optional (query) parameters as one object, then
+headers — **and any category the method has no items in is omitted entirely**.
 
-So the REST shapes are now confirmed, but the **argument order of the Apps
-Script wrappers is not**: this board calls
-`Tasks.Tasks.patch(resource, tasklist, task)`,
-`Tasks.Tasks.insert(resource, tasklist)`,
-`Tasks.Tasks.move(tasklist, task, optionalArgs)` and
-`Tasks.Tasks.remove(tasklist, task)`. These follow the usual convention —
-request body first, then path parameters in order, then an options object —
-and that convention is almost certainly right, but "almost certainly" is what
-this whole file is about. It fails at runtime, not in review.
+Checked against all fourteen call sites in `Code.gs`, across seven distinct
+signatures. Every one was already right:
+
+| Call | Endpoint | Why it is right |
+|---|---|---|
+| `Tasks.list(listId, opts)` | `GET /lists/{tasklist}/tasks` | no body, one path param, query object |
+| `Tasklists.list(opts)` | `GET /users/@me/lists` | no body, no path params at all |
+| `Tasks.get(listId, taskId)` | `GET /lists/{tasklist}/tasks/{task}` | two path params in URL order |
+| `Tasks.patch(body, listId, taskId)` | `PATCH /lists/{tasklist}/tasks/{task}` | body first, then both path params |
+| `Tasks.insert(body, listId)` | `POST /lists/{tasklist}/tasks` | body first, then path |
+| `Tasklists.insert(body)` | `POST /users/@me/lists` | body only |
+| `Tasks.move(listId, taskId, opts)` | `POST …/{task}/move` | body **must be empty**, so omitted |
+
+`move` is the one I would have got wrong by pattern-matching. It sits next to
+`insert` and `patch`, which both lead with a body, but its request body must be
+empty — so the body slot vanishes and the path parameters move to the front. It
+looks inconsistent and is not.
+
+**Lesson.** This is the happiest possible outcome and also the least
+instructive: I was right, but I was right by convention rather than by
+knowledge, and I could not tell the difference from the inside. The convention
+happened to hold. Being unable to distinguish "I know this" from "this is what
+usually happens" is the actual finding — and the only fix is to go and read,
+which is what happened here.
+
+Worth recording that reading paid for itself anyway: the same round of
+documents turned up `showAssigned`, which was silently dropping tasks.
+
+## 12. Open question I could not settle
+
+Which fields of the `Task` resource are writable. `tasks.insert` documents its
+request body only as "an instance of Task" and does not enumerate the
+output-only fields, so `due` being settable on create is strongly implied — it
+is a Task field, nothing marks it read-only — but not stated outright. Every
+new task this board creates sets `due`, so if that assumption is wrong the
+default-to-today behaviour silently does nothing.
+
+The `Task` resource page would settle it, along with the exact shape of
+`links[]` that the "Open the email" chip maps.
