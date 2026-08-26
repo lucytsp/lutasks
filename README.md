@@ -36,14 +36,100 @@ A trailing parenthetical that is *not* a known name is treated as a note, so
 `(partially done)` and `(manual)` render as a dashed note chip instead of
 inventing a colleague.
 
-## Reading
+## Views
 
 - **Wall** — a masonry wall of every task, reflowing as cards expand.
 - **Board** — one column per list, closer to the Google Calendar side panel.
+- **Week** — the last five *working* days, each column listing what was closed
+  that day and why. Weekends are skipped rather than shown empty.
 - Descriptions sit at low opacity, clamped to two lines. Hovering lifts them;
   clicking a card opens it fully and the neighbouring cards slide out of the
   way rather than jumping.
-- `/` focuses search. `Esc` closes an open card or the add form.
+- `/` focuses search. `Esc` closes an open card, the add form, or a note prompt.
+- **Easy read** enlarges the text, loosens the leading to 1.85 and switches the
+  titles to the plainer of the two faces.
+- **Theme** follows the system by default and can be pinned to light or dark.
+  Both, plus the view and Easy read, are remembered between visits.
+
+## Closing a task
+
+Ticking is instant — the note is optional and never blocks it. The toast that
+follows offers **Add a note** and **Undo**, and the note is stored on the task
+itself:
+
+    ✓ 26 Aug: did not fix — superseded by the new timesheet screen
+
+so it reads correctly in the Google Tasks app too, and shows on the card
+without needing to open it. Reopening a task clears the note.
+
+## Seniors
+
+Anyone listed in `CONFIG.SENIORS` (matched on full email address) also gets:
+
+- **Comments**, stored one per line on the task itself:
+  `» 26 Aug · matt: blocked on the fee review change`
+- **Reordering** within a list — Top, Up, Down, via `Tasks.move`.
+- **Send to Today**, which moves a task into the `TODAY` list and back.
+
+Everyone else gets a read-and-add board. Because comments live in the task's
+own notes rather than a side table, they survive losing this script and are
+readable from any Google Tasks client.
+
+## New tasks land in UNSORTED
+
+`CONFIG.INTAKE_LIST` is `UNSORTED`, and the compose form defaults to it, so a
+task written in a hurry has somewhere to go that is not the wrong list. File it
+later from the board.
+
+## Handing a task to Claude
+
+An open card offers **Copy for Claude** — the full brief (title, list, area,
+assignee, age, detail, comments and links) on the clipboard — and **Ask
+Claude**, which opens a new conversation with that brief prefilled. The link
+carries a truncated version because URLs have limits; the copy button carries
+everything.
+
+The clipboard API is blocked in some embedded frames. There is a
+`document.execCommand` fallback, and if both fail the board says so and points
+you at Ask Claude instead.
+
+## Tasks that came in from email
+
+A task created from Gmail carries a `links[]` entry back to the message. Those
+render as an **Open the email** chip, and the link is preserved through
+everything here — which is why `sendToList` refuses to move an email-linked
+task when it would have to fall back to copy-and-delete.
+
+## Linking to a view
+
+The board reads query parameters, so a filtered view can be sent to someone:
+
+    ?view=board&lists=JOBSMAN%20TODO,TODAY
+    ?view=week
+    ?q=timesheet&done=1
+
+`view` is `wall`, `board` or `week`; `lists` is a comma-separated list of list
+titles; `q` prefills the search; `done=1` shows completed tasks.
+
+An Apps Script page runs inside a sandboxed frame, so the address bar is not
+readable with `window.location` — this uses `google.script.url.getLocation`,
+with a 1.5s timeout so a slow response never leaves the board hanging.
+
+### Getting a nicer URL than /macros/s/AKfycb…
+
+Apps Script gives you no control over the deployment URL. Three ways round it,
+cheapest first:
+
+1. **Google Sites.** Make a site at `sites.google.com`, embed the web app, and
+   publish to `sites.google.com/tspartners.co.uk/tasks`. No code, and it keeps
+   the Workspace sign-in.
+2. **A redirect on your own domain.** Point `tasks.tspartners.co.uk` at a
+   Cloudflare Worker (free) or any redirect service that 302s to the `/exec`
+   URL, preserving the query string. This gives the tidiest links to share.
+3. **A bookmark per view.** Not a real URL, but it costs nothing.
+
+Whichever you pick, the `/exec` URL changes each time you deploy a *new*
+version, so redeploy over the existing deployment rather than creating one.
 
 ## Setup
 
@@ -84,6 +170,7 @@ Google Workspace domain. Two reasons not to loosen this to `ANYONE`:
 ## Files
 
     Code.gs             Apps Script backend — Tasks API, paginated
+    LEARNINGS.md        mistakes made building this, and what they taught
     index.html          the whole front end, one file, no build step
     appsscript.json     manifest: Tasks advanced service, domain access
     preview.html        generated; index.html minus the document wrapper

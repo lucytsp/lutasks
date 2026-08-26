@@ -23,6 +23,7 @@
   --t-green-bg:#dfefda;  --t-green-bd:#bcddb5;  --t-green-chip:#d0e7c9;
   --t-violet-bg:#ebe1f5; --t-violet-bd:#d3c2e8; --t-violet-chip:#e0d2ef;
   --t-cyan-bg:#d8eaf6;   --t-cyan-bd:#b0d3e8;   --t-cyan-chip:#c6e0f1;
+  --t-sand-bg:#f0eae0;   --t-sand-bd:#dbcbb4;   --t-sand-chip:#e6dbc9;
 
   --gap:16px; --row:4px; --radius:9px;
 }
@@ -46,6 +47,7 @@
     --t-green-bg:#172e18;  --t-green-bd:#274828;  --t-green-chip:#1e3a1f;
     --t-violet-bg:#271a38; --t-violet-bd:#3e2b55; --t-violet-chip:#312145;
     --t-cyan-bg:#12293a;   --t-cyan-bd:#1f4258;   --t-cyan-chip:#183449;
+    --t-sand-bg:#2e2820;   --t-sand-bd:#4a4033;   --t-sand-chip:#3a3228;
   }
 }
 :root[data-theme="dark"]{
@@ -67,6 +69,7 @@
   --t-green-bg:#172e18;  --t-green-bd:#274828;  --t-green-chip:#1e3a1f;
   --t-violet-bg:#271a38; --t-violet-bd:#3e2b55; --t-violet-chip:#312145;
   --t-cyan-bg:#12293a;   --t-cyan-bd:#1f4258;   --t-cyan-chip:#183449;
+  --t-sand-bg:#2e2820;   --t-sand-bd:#4a4033;   --t-sand-chip:#3a3228;
 }
 
 /* ---------- base ------------------------------------------------------ */
@@ -163,8 +166,8 @@ button{background:none;border:0;cursor:pointer}
 .column-head{display:flex;align-items:center;gap:8px;padding:0 2px 8px;border-bottom:2px solid var(--col-bd)}
 .column-head .dot{width:10px;height:10px;border-radius:50%;background:var(--col-bd)}
 .column-head h2{
-  font-family:"Bricolage Grotesque",sans-serif;font-size:13px;font-weight:700;
-  letter-spacing:.045em;text-transform:uppercase;margin:0;
+  font-family:"Bricolage Grotesque",sans-serif;font-size:14px;font-weight:700;
+  letter-spacing:.005em;margin:0;
 }
 .column-head .n{
   margin-left:auto;font-family:"IBM Plex Mono",monospace;font-size:11px;
@@ -188,8 +191,8 @@ button{background:none;border:0;cursor:pointer}
 
 .card-top{grid-column:1/-1;display:flex;align-items:center;gap:7px;margin-bottom:11px;min-height:17px}
 .cat{
-  font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:500;
-  letter-spacing:.07em;text-transform:uppercase;
+  font-family:"IBM Plex Mono",monospace;font-size:10.5px;font-weight:500;
+  letter-spacing:.04em;
   padding:2px 6px;border-radius:4px;background:var(--c-chip);
   color:var(--card-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%;
 }
@@ -221,7 +224,7 @@ button{background:none;border:0;cursor:pointer}
 .tick-mark{
   fill:none;stroke:var(--pen);stroke-width:2.8;
   stroke-linecap:round;stroke-linejoin:round;
-  stroke-dasharray:100;stroke-dashoffset:101;
+  stroke-dasharray:100 300;stroke-dashoffset:100;
   transition:stroke-dashoffset .2s cubic-bezier(.55,0,.85,.3);
 }
 .card.is-done .tick-mark{
@@ -286,13 +289,98 @@ button{background:none;border:0;cursor:pointer}
   color:#fff;text-transform:uppercase;letter-spacing:.02em;
 }
 .note-chip{
-  font-size:11px;font-style:italic;color:var(--card-muted);opacity:.8;
+  font-size:11.5px;color:var(--card-muted);opacity:.85;
   padding:2px 8px;border-radius:999px;border:1px dashed var(--c-bd);
 }
 .list-tag{
-  font-family:"IBM Plex Mono",monospace;font-size:9.5px;letter-spacing:.06em;
-  text-transform:uppercase;color:var(--card-muted);opacity:.62;margin-left:auto;
+  font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.03em;
+  color:var(--card-muted);opacity:.62;margin-left:auto;
 }
+
+/* a task that arrived from Gmail keeps its way back to the message */
+.link-chip{
+  display:inline-flex;align-items:center;gap:5px;padding:2px 9px 2px 7px;
+  border-radius:999px;background:var(--c-chip);color:var(--card-muted);
+  font-size:11.5px;text-decoration:none;transition:color .15s;
+}
+.link-chip:hover{color:var(--card-ink);text-decoration:underline}
+.link-chip svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:1.8}
+
+/* why a task was closed stays visible without opening the card — it is
+   usually the reason you are looking at a done task at all */
+.close-note{
+  grid-column:2;display:flex;gap:7px;align-items:flex-start;margin-top:9px;
+  font-size:12.5px;line-height:1.55;color:var(--card-muted);
+}
+.close-mark{color:var(--pen);font-weight:700;flex:none}
+
+/* the week: done work, by the day it was finished */
+.week-head h2{
+  font-family:"Bricolage Grotesque",sans-serif;font-size:14px;font-weight:700;
+  letter-spacing:.005em;margin:0;
+}
+.week-head .date{
+  font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--ink-faint);
+  margin-left:7px;
+}
+.week-head.today h2{color:var(--accent)}
+.column.week{flex:1 1 210px;min-width:0}
+.column.week .card.is-struck .card-body{opacity:.9}
+.column.week .card.is-struck .title{text-decoration-color:color-mix(in srgb,var(--pen) 35%,transparent)}
+.day-empty{
+  font-size:12.5px;color:var(--ink-faint);padding:14px 2px;line-height:1.5;
+}
+
+/* everything below appears only once a card is open — the card at rest
+   stays quiet, and the detail arrives when it is asked for */
+.card-extra{grid-column:2;display:none}
+.card.is-open .card-extra{display:block}
+
+.comments{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.comment{
+  font-size:12.5px;line-height:1.55;color:var(--card-ink);
+  background:var(--c-chip);border-radius:8px;padding:7px 10px;
+}
+.comment .meta{
+  font-family:"IBM Plex Mono",monospace;font-size:10.5px;
+  color:var(--card-muted);margin-right:6px;
+}
+.comment-form{display:flex;gap:6px;margin-top:8px}
+.comment-form input{
+  flex:1;min-width:0;font-size:12.5px;padding:7px 10px;border-radius:8px;
+  border:1px solid var(--c-bd);background:var(--c-bg);color:var(--card-ink);
+}
+.comment-form input:focus{outline:2px solid var(--accent);outline-offset:1px}
+
+.card-actions{
+  display:flex;gap:6px;flex-wrap:wrap;align-items:center;
+  margin-top:13px;padding-top:11px;border-top:1px solid var(--c-bd);
+}
+.act{
+  font-size:11.5px;font-weight:500;padding:4px 11px;border-radius:999px;
+  border:1px solid var(--c-bd);color:var(--card-muted);
+  transition:color .15s,border-color .15s;
+}
+.act:hover{color:var(--card-ink);border-color:var(--card-muted)}
+.act-today{border-color:var(--card-muted);color:var(--card-ink);font-weight:600}
+.act-group{display:flex;gap:4px;margin-left:auto;align-items:center}
+.act-group .act{padding:4px 9px}
+.senior-tag{
+  font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.05em;
+  color:var(--card-muted);opacity:.7;
+}
+
+/* ---------- easy read ------------------------------------------------- *
+ * Larger text, looser leading, and the plainer of the two faces — the
+ * typographic settings that make long descriptions easier to track. */
+:root[data-read="easy"] .title{
+  font-family:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;
+  font-size:16px;line-height:1.5;letter-spacing:0;font-weight:500;
+}
+:root[data-read="easy"] .desc{font-size:15px;line-height:1.85}
+:root[data-read="easy"] .card.is-open .desc{max-width:66ch}
+:root[data-read="easy"] .card-body{padding:17px 19px}
+:root[data-read="easy"] .comment{font-size:13.5px;line-height:1.75}
 
 /* ---------- states ---------------------------------------------------- */
 .msg{padding:64px 20px;text-align:center;color:var(--ink-muted)}
@@ -377,11 +465,22 @@ button{background:none;border:0;cursor:pointer}
 
 .toast{
   position:fixed;left:50%;bottom:28px;transform:translate(-50%,14px);z-index:70;
-  padding:9px 18px;border-radius:999px;background:var(--ink);color:var(--ground);
+  display:flex;align-items:center;gap:14px;
+  padding:9px 12px 9px 18px;border-radius:999px;background:var(--ink);color:var(--ground);
   font-size:13px;font-weight:500;opacity:0;pointer-events:none;
   transition:opacity .2s ease,transform .2s ease;
 }
-.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.toast button{
+  font-size:12.5px;font-weight:600;padding:4px 12px;border-radius:999px;
+  background:var(--ground);color:var(--ink);
+}
+.toast button:hover{opacity:.85}
+.toast input{
+  width:min(46vw,300px);padding:5px 11px;border-radius:999px;border:0;
+  background:var(--ground);color:var(--ink);font-size:12.5px;
+}
+.toast input:focus{outline:2px solid var(--accent);outline-offset:1px}
 
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important}
@@ -410,7 +509,11 @@ button{background:none;border:0;cursor:pointer}
         <div class="seg" role="group" aria-label="Layout">
           <button id="viewWall" aria-pressed="true">Wall</button>
           <button id="viewBoard" aria-pressed="false">Board</button>
+          <button id="viewWeek" aria-pressed="false">Week</button>
         </div>
+        <button class="btn" id="readToggle" aria-pressed="false"
+                title="Larger text and looser line spacing">Easy read</button>
+        <button class="btn" id="themeToggle">Theme: auto</button>
         <button class="btn" id="doneToggle" aria-pressed="false">Show done</button>
         <button class="btn btn-primary" id="addOpen">Add task</button>
       </div>
@@ -436,6 +539,7 @@ button{background:none;border:0;cursor:pointer}
     <div class="field">
       <span>Which list</span>
       <div class="swatches" id="swatches"></div>
+      <p class="guide">New tasks land in <strong>UNSORTED</strong> unless you pick another. File them later.</p>
     </div>
 
     <label class="field">
@@ -475,26 +579,38 @@ var DEMO = {
   lists: [
     { id:"bugs", title:"JOBSMAN BUGS", colour:"rose", tasks:[
       { title:"As your tax liability is over &#xA3;1000.00 HMRC would expect you to make payments on account towards this of &#xA3;2,053.20 in January and July 2025.", w:9 },
-      { title:"One Off Services must not show. (emma)", w:8 },
-      { title:"Job Manager Query: statutory deadline extend manually (muneeb)", w:8 },
+      { title:"One Off Services must not show. (emma)", w:8 , mail:true},
+      { title:"Job Manager Query: statutory deadline extend manually (muneeb)", w:8 , mail:true},
       { title:"Make live OUTBOX", w:8 },
-      { title:"Old AML form (add link to AML)", w:8 },
-      { title:"Time Sheet on the New Job Manager EDIT OR DELETE", w:8 },
-      { title:"TIMESHEETS: Don't show closed jobs in timesheet (Shehzad)", w:11 },
-      { title:"Fwd: Our new \"intern\"", w:9 },
+      { title:"Old AML form (add link to AML)", w:8 , mail:true},
+      { title:"Time Sheet on the New Job Manager EDIT OR DELETE", w:8 , mail:true},
+      { title:"TIMESHEETS: Don't show closed jobs in timesheet (Shehzad)", w:11 , mail:true},
+      { title:"Fwd: Our new \"intern\"", w:9 , mail:true},
       { title:"TIMESHEETS: Cannot see the whole long text input note", w:12 },
       { title:"Wrong stat date corp jobs", w:16,
         notes:"45 distinct clients (one client has two open jobs in the set, totalling 46 rows). Statutory date is being pulled from the wrong field on migration — needs a one-off correction script plus a guard on the import." },
       { title:"PROPOSALS: Signature block drops the second signatory (chris)", w:5 },
-      { title:"Client portal: password reset email lands in spam", w:3 }
+      { title:"Client portal: password reset email lands in spam", w:3 },
+      { title:"TIMESHEETS: totals row rounds the wrong way (matt)", w:6, dAgo:0,
+        why:"fixed — was summing before rounding" },
+      { title:"Duplicate client rows on the fee review screen", w:7, dAgo:1,
+        why:"did not fix — same root cause as the stat date job, folded into that" },
+      { title:"AML form link 404s from the client portal", w:5, dAgo:2 },
+      { title:"PROPOSALS: signature block spacing (chris)", w:4, dAgo:3,
+        why:"duplicate of the second-signatory bug" },
+      { title:"Outbox retry loop on bounced addresses", w:9, dAgo:4,
+        why:"fixed — capped at three attempts then flags the client" }
     ]},
     { id:"todo", title:"JOBSMAN TODO", colour:"indigo", tasks:[
       { title:"JM: CLIENT AUDIT LOG (partially done)", w:26,
-        notes:"add all events, ie - proposal sent by - proposal signed - services added - job scehduled - manager changed - put on hold" },
+        notes:"add all events, ie - proposal sent by - proposal signed - services added - job scehduled - manager changed - put on hold",
+        comments:[{when:"24 Aug", who:"matt", text:"Proposal signed is the one we actually get asked about — do that first if you split this."}] },
       { title:"JM: Multiple client time and fees review (Walled)", w:24,
         notes:"Because sometimes one client has mulitple businesses and SATR that add up." },
       { title:"ONBOARDING: Make useful for Briony & co", w:22,
-        notes:"NEEDS lots of thought, have spoken to briony. The current flow assumes the client is already on the system, which is exactly backwards for a new enquiry." },
+        notes:"NEEDS lots of thought, have spoken to briony. The current flow assumes the client is already on the system, which is exactly backwards for a new enquiry.",
+        comments:[{when:"20 Aug", who:"briony", text:"Happy to sit down and walk you through what we actually do on a new enquiry."},
+                  {when:"21 Aug", who:"matt", text:"Worth doing before the September intake."}] },
       { title:"FORMER CLIENT: Delete open jobs (manual)", w:16 },
       { title:"TIMER: Manual time updates (peter)", w:18 },
       { title:"CIC rules etc (Lyndsey)", w:18,
@@ -518,9 +634,17 @@ var DEMO = {
       { title:"pie chart of stages (tami)", w:16 },
       { title:"Email for Tami with time in Newt-pod (tami)", w:16 }
     ]},
+    { id:"unsorted", title:"UNSORTED", colour:"sand", tasks:[
+      { title:"Ring Companies House about the CIC filing", w:0 },
+      { title:"someone said the outbox double-sends?", w:1 }
+    ]},
+    { id:"today", title:"TODAY", colour:"green", tasks:[
+      { title:"Chase the HMRC payments-on-account wording", w:0 },
+      { title:"TIMER: Manual time updates (peter)", w:1 }
+    ]},
     { id:"appsheet", title:"DB / appsheet todo", colour:"violet", tasks:[
-      { title:"just checking joe welch / chris", w:20 },
-      { title:"Partnership Tax Returns missing statutory (CHRIS)", w:19 },
+      { title:"just checking joe welch / chris", w:20 , mail:true},
+      { title:"Partnership Tax Returns missing statutory (CHRIS)", w:19 , mail:true},
       { title:"WHATSAPP RECEIPTS", w:8 }
     ]}
   ]
@@ -605,6 +729,8 @@ function displayName(name){
 }
 
 var WEEK = 7 * 24 * 60 * 60 * 1000;
+var DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+var MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
 /* Google paints every overdue task the same red, which tells you nothing
    when the whole board is overdue. Grade it instead. */
@@ -642,8 +768,25 @@ function el(tag, cls, text){
 var state = {
   lists: [], people: new Set(), cards: [],
   hidden: new Set(), query: "", showDone: false,
-  view: "wall", openId: null, live: false
+  view: "wall", openId: null, live: false,
+  viewer: { email: "", isSenior: false }
 };
+
+/* Preferences persist so the board looks the same every time it opens —
+   predictability matters more here than cleverness. Storage can throw in a
+   private window, so every access is guarded. */
+var PREF_KEY = "taskwall.prefs";
+function loadPrefs(){
+  try { return JSON.parse(localStorage.getItem(PREF_KEY) || "{}") || {}; }
+  catch(e){ return {}; }
+}
+function savePrefs(patch){
+  try {
+    var cur = loadPrefs();
+    for(var k in patch) if(Object.prototype.hasOwnProperty.call(patch, k)) cur[k] = patch[k];
+    localStorage.setItem(PREF_KEY, JSON.stringify(cur));
+  } catch(e){ /* nothing to do — the board still works */ }
+}
 
 var stage   = document.getElementById("stage");
 var railEl  = document.getElementById("rail");
@@ -651,17 +794,62 @@ var tallyEl = document.getElementById("tally");
 var toastEl = document.getElementById("toast");
 var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-function toast(text){
-  toastEl.textContent = text;
+/* An action can be undone from the toast — the cheapest way to make a
+   board forgiving is to never make a click final. */
+function hideToast(){
+  toastEl.classList.remove("show");
+  clearTimeout(toast._t);
+}
+
+function toast(text, actions){
+  toastEl.textContent = "";
+  toastEl.appendChild(el("span", null, text));
+  (actions || []).forEach(function(a){
+    var b = el("button", null, a.label);
+    b.type = "button";
+    b.addEventListener("click", function(){ hideToast(); a.fn(); });
+    toastEl.appendChild(b);
+  });
   toastEl.classList.add("show");
   clearTimeout(toast._t);
-  toast._t = setTimeout(function(){ toastEl.classList.remove("show"); }, 2600);
+  toast._t = setTimeout(function(){ toastEl.classList.remove("show"); },
+                        (actions && actions.length) ? 7000 : 2600);
+}
+
+/* Asking for the note in the toast keeps the tick itself instant — the
+   reward lands first, and the explanation is optional and never blocking. */
+function toastPrompt(text, placeholder, onSave){
+  toastEl.textContent = "";
+  toastEl.appendChild(el("span", null, text));
+  var input = document.createElement("input");
+  input.type = "text";
+  input.placeholder = placeholder;
+  input.setAttribute("aria-label", text);
+  var save = el("button", null, "Save");
+  save.type = "button";
+  var commit = function(){
+    var v = input.value.trim();
+    hideToast();
+    if(v) onSave(v);
+  };
+  save.addEventListener("click", commit);
+  input.addEventListener("keydown", function(ev){
+    if(ev.key === "Enter"){ ev.preventDefault(); commit(); }
+    if(ev.key === "Escape"){ hideToast(); }
+  });
+  toastEl.appendChild(input);
+  toastEl.appendChild(save);
+  toastEl.classList.add("show");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(function(){ toastEl.classList.remove("show"); }, 15000);
+  setTimeout(function(){ input.focus(); }, 40);
 }
 
 /* ---------- ingest ---------------------------------------------------- */
 function ingest(board){
   state.people = new Set((board.people || []).map(function(p){ return p.toLowerCase(); }));
   state.lists  = board.lists || [];
+  state.viewer = board.viewer || { email: "", isSenior: false };
   state.cards  = [];
   var now = Date.now();
 
@@ -680,6 +868,12 @@ function ingest(board){
         assignees: trail.assignees,
         note: trail.note,
         desc: decodeEntities(task.notes || "").trim(),
+        comments: (task.comments || []).map(function(c){
+          return { when: c.when, who: c.who, text: decodeEntities(c.text || "") };
+        }),
+        links: task.links || [],
+        closeNote: task.closeNote || null,
+        completedAt: task.completedAt || null,
         completed: !!task.completed,
         age: ageOf(task, now)
       });
@@ -715,7 +909,15 @@ function buildCard(card, isPreview){
 
   var top = el("div", "card-top");
   if(card.category) top.appendChild(el("span", "cat", card.category));
-  if(card.age){
+  if(card.completed && card.completedAt){
+    var when = new Date(Date.parse(card.completedAt));
+    var same = when.toDateString() === new Date().toDateString();
+    var closed = el("span", "age",
+      "closed " + (same ? "today" : DAY_NAMES[when.getDay()].slice(0, 3) +
+                   " " + when.getDate() + " " + MONTHS[when.getMonth()]));
+    closed.dataset.heat = "cool";
+    top.appendChild(closed);
+  } else if(card.age){
     var age = el("span", "age", card.age.label);
     age.dataset.heat = card.age.heat;
     top.appendChild(age);
@@ -739,6 +941,13 @@ function buildCard(card, isPreview){
 
   if(card.desc) body.appendChild(el("p", "desc", card.desc));
 
+  if(card.closeNote){
+    var cn = el("div", "close-note");
+    cn.appendChild(el("span", "close-mark", "\u2713"));
+    cn.appendChild(el("span", null, card.closeNote.text));
+    body.appendChild(cn);
+  }
+
   var foot = el("div", "card-foot");
   card.assignees.forEach(function(name){
     var pretty = displayName(name);
@@ -750,8 +959,24 @@ function buildCard(card, isPreview){
     foot.appendChild(who);
   });
   if(card.note) foot.appendChild(el("span", "note-chip", card.note));
+  (card.links || []).forEach(function(link){
+    var a = document.createElement("a");
+    a.className = "link-chip";
+    a.href = link.link;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    a.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">' +
+      '<rect x="2.5" y="5" width="19" height="14" rx="2"></rect>' +
+      '<path d="M3 7l9 6 9-6"></path></svg>';
+    a.appendChild(el("span", null,
+      link.type === "email" ? "Open the email" : (link.description || "Open the link")));
+    a.addEventListener("click", function(ev){ ev.stopPropagation(); });
+    foot.appendChild(a);
+  });
   if(state.view === "wall" && !isPreview) foot.appendChild(el("span", "list-tag", card.listTitle));
   if(foot.children.length) body.appendChild(foot);
+
+  if(!isPreview) body.appendChild(buildExtra(card));
 
   if(isPreview){
     body.removeAttribute("role");
@@ -769,6 +994,196 @@ function buildCard(card, isPreview){
   return wrap;
 }
 
+/* Everything that only matters once you have chosen a task: its comment
+   thread, the hand-off to Claude, and — for seniors — reordering. */
+function buildExtra(card){
+  var extra = el("div", "card-extra");
+  extra.addEventListener("click", function(ev){ ev.stopPropagation(); });
+
+  if((card.comments || []).length){
+    var list = el("div", "comments");
+    card.comments.forEach(function(c){
+      var row = el("div", "comment");
+      row.appendChild(el("span", "meta", c.who + " · " + c.when));
+      row.appendChild(el("span", null, c.text));
+      list.appendChild(row);
+    });
+    extra.appendChild(list);
+  }
+
+  if(state.viewer.isSenior){
+    var form = el("form", "comment-form");
+    var input = document.createElement("input");
+    input.type = "text";
+    input.placeholder = "Add a comment for Lucy";
+    input.setAttribute("aria-label", "Add a comment on " + card.title);
+    var send = el("button", "act", "Comment");
+    send.type = "submit";
+    form.appendChild(input);
+    form.appendChild(send);
+    form.addEventListener("submit", function(ev){
+      ev.preventDefault();
+      var text = input.value.trim();
+      if(!text) return;
+      send.disabled = true;
+      api.comment(card.listId, card.id, text).then(function(res){
+        if(res && res.success === false) throw new Error(res.error);
+        input.value = "";
+        toast("Comment added");
+        if(api.live) boot();
+        else {
+          card.comments.push({ when: "today", who: "you", text: text });
+          render();
+        }
+      }).catch(function(err){
+        toast("Could not add that comment");
+        if(window.console) console.error(err);
+      }).then(function(){ send.disabled = false; });
+    });
+    extra.appendChild(form);
+  }
+
+  var actions = el("div", "card-actions");
+
+  var todayList = state.lists.filter(function(l){ return l.title === TODAY_TITLE; })[0];
+  if(state.viewer.isSenior && todayList && card.listId !== todayList.id){
+    var zap = el("button", "act act-today", "Send to Today");
+    zap.type = "button";
+    zap.setAttribute("aria-label", "Move " + card.title + " to the Today list");
+    zap.addEventListener("click", function(){
+      zap.disabled = true;
+      api.sendToToday(card.listId, card.id).then(function(res){
+        if(res && res.success === false) throw new Error(res.error);
+        if(res && res.noop){ toast("Already in Today"); return; }
+        var from = card.listTitle;
+        toast(res && res.copied ? "Moved to Today (as a copy)" : "Moved to Today",
+              [{ label: "Undo", fn: function(){ undoToday(card, from); } }]);
+        if(api.live) boot();
+        else { moveCardLocally(card, todayList); render(); }
+      }).catch(function(err){
+        toast(String((err && err.message) || err));
+        if(window.console) console.error(err);
+      }).then(function(){ zap.disabled = false; });
+    });
+    actions.appendChild(zap);
+  }
+
+  var copy = el("button", "act", "Copy for Claude");
+  copy.type = "button";
+  copy.addEventListener("click", function(){
+    copyText(claudeBrief(card)).then(function(){
+      copy.textContent = "Copied";
+      setTimeout(function(){ copy.textContent = "Copy for Claude"; }, 1800);
+    }).catch(function(){
+      toast("Copying is blocked here — use Ask Claude instead");
+    });
+  });
+  actions.appendChild(copy);
+
+  var ask = document.createElement("a");
+  ask.className = "act";
+  ask.target = "_blank";
+  ask.rel = "noopener noreferrer";
+  ask.textContent = "Ask Claude";
+  // Long briefs blow past what a URL can carry, so the link takes a summary
+  // and the copy button takes the lot.
+  ask.href = "https://claude.ai/new?q=" +
+             encodeURIComponent(claudeBrief(card).slice(0, 5500));
+  actions.appendChild(ask);
+
+  if(state.viewer.isSenior){
+    var group = el("div", "act-group");
+    group.appendChild(el("span", "senior-tag", "Order"));
+    [["Top","top"],["Up","up"],["Down","down"]].forEach(function(pair){
+      var b = el("button", "act", pair[0]);
+      b.type = "button";
+      b.setAttribute("aria-label", "Move " + card.title + " " + pair[0].toLowerCase() +
+                                   " in " + card.listTitle);
+      b.addEventListener("click", function(){
+        b.disabled = true;
+        api.move(card.listId, card.id, pair[1]).then(function(res){
+          if(res && res.success === false) throw new Error(res.error);
+          toast("Moved in " + card.listTitle);
+          if(api.live) boot();
+        }).catch(function(err){
+          toast("Could not move that task");
+          if(window.console) console.error(err);
+        }).then(function(){ b.disabled = false; });
+      });
+      group.appendChild(b);
+    });
+    actions.appendChild(group);
+  }
+
+  extra.appendChild(actions);
+  return extra;
+}
+
+var TODAY_TITLE = "TODAY";
+var INTAKE_TITLE = "UNSORTED";   // new tasks land here until they are filed
+
+/* Demo-mode only: reflect the move without a backend. */
+function moveCardLocally(card, list){
+  card.listId = list.id;
+  card.listTitle = list.title;
+  card.colour = list.colour;
+}
+
+function undoToday(card, backToTitle){
+  var back = state.lists.filter(function(l){ return l.title === backToTitle; })[0];
+  if(!back) return;
+  api.sendToToday && api.live
+    ? google.script.run
+        .withSuccessHandler(function(){ boot(); })
+        .withFailureHandler(function(){ toast("Could not put that back"); })
+        .sendToList(card.listId, card.id, backToTitle)
+    : (moveCardLocally(card, back), render());
+}
+
+/* A self-contained brief, so a conversation can start from the card alone. */
+function claudeBrief(card){
+  var out = ["# " + card.title];
+  var meta = [];
+  if(card.listTitle) meta.push("List: " + card.listTitle);
+  if(card.category)  meta.push("Area: " + card.category);
+  if(card.assignees.length) meta.push("For: " + card.assignees.map(displayName).join(", "));
+  if(card.note)      meta.push("Note: " + card.note);
+  if(card.age)       meta.push("Age: " + card.age.label);
+  if(meta.length) out.push(meta.join("\n"));
+  if(card.desc) out.push("## Detail\n" + card.desc);
+  if((card.comments || []).length){
+    out.push("## Comments\n" + card.comments.map(function(c){
+      return "- " + c.who + " (" + c.when + "): " + c.text;
+    }).join("\n"));
+  }
+  if((card.links || []).length){
+    out.push("## Links\n" + card.links.map(function(l){
+      return "- " + (l.description || l.type) + ": " + l.link;
+    }).join("\n"));
+  }
+  return out.join("\n\n");
+}
+
+function copyText(text){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    return navigator.clipboard.writeText(text);
+  }
+  // The clipboard API is unavailable in some embedded frames; fall back.
+  return new Promise(function(resolve, reject){
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.top = "-1000px";
+    document.body.appendChild(ta);
+    ta.select();
+    var ok = false;
+    try { ok = document.execCommand("copy"); } catch(e){ ok = false; }
+    document.body.removeChild(ta);
+    ok ? resolve() : reject(new Error("copy blocked"));
+  });
+}
+
 function render(){
   var cards = visibleCards();
   updateRail();
@@ -780,7 +1195,7 @@ function render(){
 
   stage.textContent = "";
 
-  if(!cards.length){
+  if(!cards.length && state.view !== "week"){
     var m = el("div", "msg");
     m.appendChild(el("h2", null, state.query ? "Nothing matches that" : "Nothing to show"));
     m.appendChild(el("p", null, state.query
@@ -790,7 +1205,8 @@ function render(){
     return;
   }
 
-  if(state.view === "board") renderBoard(cards);
+  if(state.view === "week") renderWeek();
+  else if(state.view === "board") renderBoard(cards);
   else renderWall(cards);
 }
 
@@ -800,6 +1216,68 @@ function renderWall(cards){
   cards.forEach(function(c){ wall.appendChild(buildCard(c)); });
   stage.appendChild(wall);
   reflow(false);
+}
+
+/* The last five working days, most recent first. Weekends are skipped
+   rather than shown empty — they are not missing days, they are days off. */
+function lastWeekdays(n){
+  var out = [], d = new Date();
+  d.setHours(0, 0, 0, 0);
+  while(out.length < n){
+    var day = d.getDay();
+    if(day !== 0 && day !== 6) out.push(new Date(d));
+    d.setDate(d.getDate() - 1);
+  }
+  return out;
+}
+
+function renderWeek(){
+  var q = state.query.trim().toLowerCase();
+  var closed = state.cards.filter(function(c){
+    if(!c.completed || !c.completedAt) return false;
+    if(state.hidden.has(c.listId)) return false;
+    if(!q) return true;
+    return (c.title + " " + (c.category||"") + " " + c.desc + " " +
+            (c.closeNote ? c.closeNote.text : "")).toLowerCase().indexOf(q) > -1;
+  });
+
+  var byDay = {};
+  closed.forEach(function(c){
+    var t = Date.parse(c.completedAt);
+    if(isNaN(t)) return;
+    var key = new Date(t).toDateString();
+    (byDay[key] = byDay[key] || []).push(c);
+  });
+
+  var days = lastWeekdays(5);
+  var todayKey = new Date().toDateString();
+  var board = el("div", "board");
+
+  days.forEach(function(day){
+    var key = day.toDateString();
+    var mine = byDay[key] || [];
+    var col = el("div", "column week");
+
+    var head = el("div", "column-head week-head");
+    if(key === todayKey) head.classList.add("today");
+    head.appendChild(el("h2", null, key === todayKey ? "Today" : DAY_NAMES[day.getDay()]));
+    head.appendChild(el("span", "date", day.getDate() + " " + MONTHS[day.getMonth()]));
+    head.appendChild(el("span", "n", String(mine.length)));
+    col.appendChild(head);
+
+    if(!mine.length){
+      col.appendChild(el("p", "day-empty", "Nothing closed."));
+    } else {
+      mine.forEach(function(c){ col.appendChild(buildCard(c)); });
+    }
+    board.appendChild(col);
+  });
+
+  stage.appendChild(board);
+
+  var total = closed.length;
+  tallyEl.textContent = total === 1 ? "1 task closed this week"
+                                    : total + " tasks closed this week";
 }
 
 function renderBoard(cards){
@@ -930,10 +1408,24 @@ var api = {
     var self = this;
     return new Promise(function(resolve, reject){
       if(!self.live){
-        // Demo mode: turn "weeks ago" into real due dates.
+        // Demo mode: turn "weeks ago" into real due dates, and place closed
+        // work on real working days so the Week view has something to show.
         var now = Date.now(), n = 0;
+        var weekdaysAgo = function(k){
+          var d = new Date();
+          d.setHours(14, 30, 0, 0);
+          var stepped = 0;
+          while(stepped < k){
+            d.setDate(d.getDate() - 1);
+            var day = d.getDay();
+            if(day !== 0 && day !== 6) stepped++;
+          }
+          return d.toISOString();
+        };
         var board = {
           people: DEMO.people,
+          // the preview shows the senior view so the extra controls are visible
+          viewer: { email: "you@tspartners.co.uk", isSenior: true },
           lists: DEMO.lists.map(function(l){
             return {
               id: l.id, title: l.title, colour: l.colour,
@@ -941,7 +1433,14 @@ var api = {
                 return {
                   id: l.id + "-" + (n++),
                   title: t.title, notes: t.notes || "",
-                  completed: false,
+                  comments: t.comments || [],
+                  closeNote: t.why ? { when:"recently", text:t.why } : null,
+                  completedAt: t.dAgo != null ? weekdaysAgo(t.dAgo) : null,
+                  links: t.mail
+                    ? [{ type:"email", description:"Original message",
+                         link:"https://mail.google.com/mail/u/0/#inbox" }]
+                    : [],
+                  completed: t.dAgo != null,
                   due: new Date(now - t.w * WEEK).toISOString(),
                   updated: new Date(now - t.w * WEEK).toISOString()
                 };
@@ -970,21 +1469,65 @@ var api = {
     });
   },
 
-  setStatus: function(listId, taskId, completed){
+  comment: function(listId, taskId, text){
+    var self = this;
+    return new Promise(function(resolve, reject){
+      if(!self.live){ resolve({ success:true, demo:true }); return; }
+      google.script.run.withSuccessHandler(resolve).withFailureHandler(reject)
+        .addComment(listId, taskId, text);
+    });
+  },
+
+  sendToToday: function(listId, taskId){
+    var self = this;
+    return new Promise(function(resolve, reject){
+      if(!self.live){ resolve({ success:true, demo:true }); return; }
+      google.script.run.withSuccessHandler(resolve).withFailureHandler(reject)
+        .sendToToday(listId, taskId);
+    });
+  },
+
+  move: function(listId, taskId, direction){
+    var self = this;
+    return new Promise(function(resolve, reject){
+      if(!self.live){ resolve({ success:true, demo:true }); return; }
+      google.script.run.withSuccessHandler(resolve).withFailureHandler(reject)
+        .moveTask(listId, taskId, direction);
+    });
+  },
+
+  setStatus: function(listId, taskId, completed, note){
     var self = this;
     return new Promise(function(resolve, reject){
       if(!self.live){ resolve({ success:true, demo:true }); return; }
       google.script.run
         .withSuccessHandler(resolve)
         .withFailureHandler(reject)
-        .setTaskStatus(listId, taskId, completed);
+        .setTaskStatus(listId, taskId, completed, note || "");
     });
   }
 };
 
+/* "did not fix", "duplicate", "client withdrew" — the reason is often the
+   only thing worth keeping about a closed task. */
+function askCloseNote(card){
+  toastPrompt("Why is this done?", "did not fix — superseded by…", function(text){
+    api.setStatus(card.listId, card.id, true, text).then(function(res){
+      if(res && res.success === false) throw new Error(res.error);
+      card.closeNote = { when: "today", text: text };
+      toast("Note saved");
+      if(api.live) boot(); else render();
+    }).catch(function(err){
+      toast("Could not save that note");
+      if(window.console) console.error(err);
+    });
+  });
+}
+
 function toggleDone(card, cardEl){
   var wanted = !card.completed;
   card.completed = wanted;                       // optimistic
+  if(!wanted) card.closeNote = null;             // back in play, reason spent
   if(state.openId === card.id) state.openId = null;
 
   // Re-rendering immediately would destroy the element mid-stroke, so the
@@ -1022,7 +1565,14 @@ function toggleDone(card, cardEl){
 
   api.setStatus(card.listId, card.id, wanted).then(function(res){
     if(res && res.success === false){ throw new Error(res.error); }
-    if(!res || !res.demo) toast(wanted ? "Marked done" : "Reopened");
+    if(wanted){
+      toast("Marked done", [
+        { label: "Add a note", fn: function(){ askCloseNote(card); } },
+        { label: "Undo",       fn: function(){ toggleDone(card, null); } }
+      ]);
+    } else if(!res || !res.demo){
+      toast("Reopened");
+    }
   }).catch(function(err){
     card.completed = !wanted;                    // roll back
     render();
@@ -1118,7 +1668,10 @@ function buildSwatches(){
 }
 
 function openSheet(){
-  if(!composeListId && state.lists.length) composeListId = state.lists[0].id;
+  if(!composeListId && state.lists.length){
+    var intake = state.lists.filter(function(l){ return l.title === INTAKE_TITLE; })[0];
+    composeListId = (intake || state.lists[0]).id;
+  }
   buildSwatches();
   refreshCompose();
   sheet.classList.add("open");
@@ -1174,17 +1727,51 @@ document.getElementById("doneToggle").addEventListener("click", function(){
   state.showDone = !state.showDone;
   this.setAttribute("aria-pressed", state.showDone ? "true" : "false");
   this.textContent = state.showDone ? "Hide done" : "Show done";
+  savePrefs({ showDone: state.showDone });
   render();
 });
 
+/* Three states, matching how the page is themed: follow the system, or
+   pin one. The label always says which, so nothing is a guess. */
+var THEMES = ["auto", "light", "dark"];
+function setTheme(theme, remember){
+  var root = document.documentElement;
+  if(theme === "auto") root.removeAttribute("data-theme");
+  else root.setAttribute("data-theme", theme);
+  document.getElementById("themeToggle").textContent = "Theme: " + theme;
+  if(remember !== false) savePrefs({ theme: theme });
+}
+document.getElementById("themeToggle").addEventListener("click", function(){
+  var cur = loadPrefs().theme || "auto";
+  setTheme(THEMES[(THEMES.indexOf(cur) + 1) % THEMES.length]);
+});
+
+function setEasyRead(on, remember){
+  var root = document.documentElement;
+  if(on) root.setAttribute("data-read", "easy");
+  else root.removeAttribute("data-read");
+  var b = document.getElementById("readToggle");
+  b.setAttribute("aria-pressed", on ? "true" : "false");
+  b.textContent = on ? "Easy read on" : "Easy read";
+  if(remember !== false) savePrefs({ easyRead: !!on });
+  reflow(false);
+}
+document.getElementById("readToggle").addEventListener("click", function(){
+  setEasyRead(this.getAttribute("aria-pressed") !== "true");
+});
+
+var VIEWS = { wall: "viewWall", board: "viewBoard", week: "viewWeek" };
 function setView(view){
   state.view = view;
-  document.getElementById("viewWall").setAttribute("aria-pressed", view === "wall" ? "true" : "false");
-  document.getElementById("viewBoard").setAttribute("aria-pressed", view === "board" ? "true" : "false");
+  for(var v in VIEWS){
+    document.getElementById(VIEWS[v]).setAttribute("aria-pressed", v === view ? "true" : "false");
+  }
+  savePrefs({ view: view });
   render();
 }
-document.getElementById("viewWall").addEventListener("click", function(){ setView("wall"); });
-document.getElementById("viewBoard").addEventListener("click", function(){ setView("board"); });
+Object.keys(VIEWS).forEach(function(v){
+  document.getElementById(VIEWS[v]).addEventListener("click", function(){ setView(v); });
+});
 
 document.addEventListener("keydown", function(ev){
   if(ev.key === "Escape"){
@@ -1208,11 +1795,52 @@ if(document.fonts && document.fonts.ready){
   document.fonts.ready.then(function(){ reflow(false); });
 }
 
+/* ---------- link-in views --------------------------------------------- *
+ * An Apps Script page runs inside a sandboxed frame, so the address bar is
+ * not readable from here — google.script.url is the supported way in.
+ *   ?view=board&lists=JOBSMAN%20TODO&q=timesheet&done=1                   */
+function readParams(done){
+  if(api.live && typeof google !== "undefined" && google.script && google.script.url){
+    var settled = false;
+    var finish = function(p){ if(!settled){ settled = true; done(p || {}); } };
+    try {
+      google.script.url.getLocation(function(loc){ finish(loc && loc.parameter); });
+      setTimeout(function(){ finish({}); }, 1500);   // never hang on it
+    } catch(e){ finish({}); }
+    return;
+  }
+  var out = {};
+  try {
+    new URLSearchParams(window.location.search).forEach(function(v, k){ out[k] = v; });
+  } catch(e){ /* ignore */ }
+  done(out);
+}
+
+function applyParams(params){
+  if(!params) return;
+  if(VIEWS[params.view]) setView(params.view);
+  if(params.q){ state.query = params.q; qInput.value = params.q; }
+  if(params.done === "1" || params.done === "true"){
+    state.showDone = true;
+    var d = document.getElementById("doneToggle");
+    d.setAttribute("aria-pressed", "true");
+    d.textContent = "Hide done";
+  }
+  if(params.lists){
+    var wanted = params.lists.split(",").map(function(t){ return t.trim().toLowerCase(); });
+    state.hidden.clear();
+    state.lists.forEach(function(l){
+      if(wanted.indexOf(l.title.toLowerCase()) === -1) state.hidden.add(l.id);
+    });
+  }
+}
+
 /* ---------- boot ------------------------------------------------------ */
 function boot(){
   api.load().then(function(board){
     if(!board || !board.lists){ throw new Error("No lists came back."); }
     ingest(board);
+    applyParams(boot._params);
     if(!api.live){
       var b = el("div", "banner");
       b.appendChild(el("strong", null, "Preview."));
@@ -1231,5 +1859,26 @@ function boot(){
   });
 }
 
-boot();
+/* ---------- start ----------------------------------------------------- */
+(function start(){
+  var prefs = loadPrefs();
+  setTheme(prefs.theme || "auto", false);
+  setEasyRead(!!prefs.easyRead, false);
+  if(VIEWS[prefs.view]){
+    state.view = prefs.view;
+    for(var v in VIEWS){
+      document.getElementById(VIEWS[v]).setAttribute("aria-pressed", v === prefs.view ? "true" : "false");
+    }
+  }
+  if(prefs.showDone){
+    state.showDone = true;
+    var d = document.getElementById("doneToggle");
+    d.setAttribute("aria-pressed", "true");
+    d.textContent = "Hide done";
+  }
+  readParams(function(params){
+    boot._params = params;      // a link-in view wins over the saved one
+    boot();
+  });
+})();
 </script>
