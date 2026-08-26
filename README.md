@@ -131,10 +131,22 @@ cheapest first:
 Whichever you pick, the `/exec` URL changes each time you deploy a *new*
 version, so redeploy over the existing deployment rather than creating one.
 
+## Typefaces
+
+Five pairings, picked from the **Display** menu and remembered per browser:
+**Ledger** (Newsreader over Public Sans, the default), **Notebook** (Fraunces
+over Source Sans 3), **Grotesque** (Archivo over IBM Plex Sans), **Editorial**
+(Instrument Serif over Instrument Sans) and **Plain** (Public Sans throughout).
+
+Each sets its own title size, weight, leading and tracking — one set of metrics
+does not suit a 20px display serif and a 16px grotesque equally. All nine
+families come from a single stylesheet and the browser fetches only the faces
+actually rendered.
+
 ## Setup
 
 1. Create a project at https://script.google.com.
-2. Copy in `Code.gs`, `index.html` and `appsscript.json`.
+2. Copy in `Config.gs`, `Code.gs`, `index.html` and `appsscript.json`.
 3. **Services → +** → add **Google Tasks API** (advanced service, `Tasks`).
 4. Edit `CONFIG` in `Code.gs`:
    - `LISTS` — the lists to show, in order, each with one of the eight colours
@@ -158,17 +170,35 @@ Google Workspace domain. Two reasons not to loosen this to `ANYONE`:
 
 ## Known limits of the Tasks API
 
+Checked against the `tasks.list` and `tasks.move` reference pages.
+
+- **Three list defaults drop data silently.** `maxResults` is 20 (max 100),
+  `showHidden` is false — and tasks completed in Google's own apps are
+  *hidden*, so `showCompleted` alone is not enough — and `showAssigned` is
+  false, so tasks assigned from Docs or Chat Spaces never appear at all.
+  `listAllTasks_` overrides all three and follows `pageToken` to the end.
+- **Repeating tasks cannot be moved between lists.** Documented explicitly,
+  and the only reason "Send to Today" can fail. It reports that in words
+  rather than copying the task, which would lose its Gmail link.
 - **`due` is date-only.** A time of day is accepted and then discarded.
 - **No push notifications.** There is no `watch` method, so refresh is manual.
-- **Ordering is opaque.** `position` is a lexicographic string, not a number,
-  and cannot be patched — reordering needs `tasks.move`. This board does not
-  reorder tasks yet.
-- **Subtasks are one level deep.**
-- **Lists paginate at 100.** `listAllTasks_` follows `pageToken` to the end;
-  without that loop the API returns 20 tasks and silently drops the rest.
+- **Ordering is opaque.** `position` is a lexicographic string, not a number.
+  Reordering goes through `tasks.move` with `previous` (omit it for first
+  position). A task that is both completed and hidden can only move to
+  position 0, so this board reorders top-level uncompleted tasks only.
+- **Ceilings.** 20,000 non-hidden tasks per list, 100,000 in total, and 2,000
+  subtasks per task.
+
+### Worth doing later
+
+`tasks.list` accepts `completedMin` / `completedMax`, so the Week view could
+ask for just the last five days of completions instead of filtering the whole
+board client-side. Also `dueMin` / `dueMax` and `updatedMin` for incremental
+polling.
 
 ## Files
 
+    Config.gs           lists, colours, seniors, people — everything you tune
     Code.gs             Apps Script backend — Tasks API, paginated
     LEARNINGS.md        mistakes made building this, and what they taught
     index.html          the whole front end, one file, no build step

@@ -16,8 +16,15 @@ function doGet() {
 /**
  * Every task in a list, following pageToken to the end.
  *
- * The Tasks API returns 20 items per page by default and caps maxResults at
- * 100. Without this loop any list over 20 tasks is silently truncated.
+ * Three defaults in tasks.list drop data unless you override them, and all
+ * three fail silently rather than erroring:
+ *   maxResults    defaults to 20 (max 100) — anything past page one vanishes
+ *   showHidden    defaults to false — and completed tasks from the Google
+ *                 apps are hidden, so showCompleted alone is not enough
+ *   showAssigned  defaults to false — tasks assigned from Docs or Chat
+ *                 Spaces never appear at all
+ *
+ * Limits, for reference: 20,000 non-hidden tasks per list, 100,000 overall.
  */
 function listAllTasks_(listId) {
   const out = [];
@@ -28,6 +35,7 @@ function listAllTasks_(listId) {
       maxResults: 100,
       showCompleted: true,
       showHidden: true,
+      showAssigned: true,
       pageToken: pageToken
     });
     if (page.items) out.push.apply(out, page.items);
@@ -168,11 +176,13 @@ function addComment(listId, taskId, text) {
 /**
  * Move a task into TODAY — or back to where it came from.
  *
- * Cross-list moves go through Tasks.move with a destinationTasklist, which
- * keeps the task's identity and therefore its Gmail link. Should that not be
- * available, the fallback copies and deletes, and that DOES lose the link
- * back to the original email — so a linked task is refused rather than
- * quietly stripped, and the caller is told why.
+ * tasks.move takes a destinationTasklist, so the task keeps its identity and
+ * therefore its link back to the original Gmail message. There is no
+ * copy-and-delete path here on purpose: copying would silently drop that
+ * link, and an honest error is worth more than a lossy success.
+ *
+ * The one documented exception is that recurring tasks cannot be moved
+ * between lists, so that failure is reported in plain words.
  */
 function sendToList(listId, taskId, targetTitle) {
   try {
@@ -188,30 +198,16 @@ function sendToList(listId, taskId, targetTitle) {
       return { success: true, noop: true };
     }
 
-    var original = Tasks.Tasks.get(listId, taskId);
-
     try {
       var moved = Tasks.Tasks.move(listId, taskId, { destinationTasklist: target.id });
       return { success: true, task: toCard_(moved, target.id), listId: target.id };
     } catch (moveErr) {
-      Logger.log('destinationTasklist unavailable, falling back: ' + moveErr);
-
-      if ((original.links || []).length) {
-        return {
-          success: false,
-          error: 'This task came from an email, and moving it the long way ' +
-                 'round would lose the link back to that message. Left where it is.'
-        };
-      }
-
-      var copy = Tasks.Tasks.insert({
-        title: original.title,
-        notes: original.notes || '',
-        due: original.due || null,
-        status: original.status || 'needsAction'
-      }, target.id);
-      Tasks.Tasks.remove(listId, taskId);
-      return { success: true, task: toCard_(copy, target.id), listId: target.id, copied: true };
+      Logger.log('move to ' + targetTitle + ' failed: ' + moveErr);
+      return {
+        success: false,
+        error: 'Could not move this one. Repeating tasks cannot be moved ' +
+               'between lists — tick it here and add it to ' + targetTitle + ' instead.'
+      };
     }
   } catch (e) {
     Logger.log('sendToList failed: ' + e);
@@ -235,6 +231,9 @@ function moveTask(listId, taskId, direction) {
     var who = viewer_();
     if (!who.isSenior) return { success: false, error: 'Only seniors can reorder.' };
 
+    // Only top-level, uncompleted tasks are reordered here: a completed and
+    // hidden task can only move to position 0 (previous must be empty), and
+    // nesting has its own rules that this board does not expose.
     var siblings = listAllTasks_(listId)
       .filter(function (t) { return t.status !== 'completed' && !t.parent; })
       .sort(function (a, b) {

@@ -136,17 +136,53 @@ than in review — at the argument order of the Apps Script advanced service
 **Lesson.** Never build against an API from memory. If the docs cannot be
 reached, say so and ask for them before writing the code, not after.
 
-## 10. Open question I could not settle
+## 10. What the documentation actually said
 
-`Tasks.move` with a `destinationTasklist` should move a task between lists
-while keeping its identity, and therefore its Gmail link. I could not reach
-Google's docs from this sandbox to confirm it exists in the Apps Script
-advanced service.
+Lucy sent the reference pages. Scoring my guesses:
 
-Rather than guess, `sendToList` tries it and falls back to copy-and-delete —
-and *refuses* rather than falls back when the task has an email link, because
-the fallback would silently destroy that link. An honest refusal beats quiet
-data loss.
+**Right:** `maxResults` defaults to 20 and caps at 100, so the pagination fix
+was necessary and correctly bounded. `position` is opaque and reordering goes
+through `tasks.move` with `previous`. `destinationTasklist` does exist, so
+cross-list moves keep the task's identity and its Gmail link.
 
-**Lesson.** When you cannot verify a capability, make the failure mode explicit
-and lossless, and say which part is unverified.
+**Wrong, and it was costing data:** `tasks.list` has a *third* silent default I
+did not know about — `showAssigned` is false, so tasks assigned from Docs or
+Chat Spaces were never being returned at all. Exactly the same class of bug as
+the 20-task truncation I had been pleased with myself for catching, sitting
+right next to it in the same parameter list. I had read that list looking for
+pagination and stopped once I found it.
+
+**Wrong in a way that mattered less:** I described completed tasks as "hidden by
+default". `showCompleted` actually defaults to *true*; it is `showHidden` that
+defaults to false, and tasks completed in Google's own apps are hidden. Same
+practical outcome, but I had the mechanism backwards.
+
+**Unsupported claims I had made anyway:** that subtasks are one level deep (the
+docs say 2,000 subtasks per task and say nothing about depth), and vague
+hand-waving about quotas when the real ceilings are 20,000 non-hidden tasks per
+list and 100,000 overall.
+
+**A constraint I would never have guessed:** repeating tasks cannot be moved
+between lists. My copy-and-delete fallback would have hit exactly this case and
+silently destroyed the Gmail link on a recurring email-derived task. Reading the
+docs let me delete the fallback entirely — there is now no lossy path at all,
+just an honest error.
+
+**Lesson.** Reading the reference for the one parameter you came for is not
+reading the reference. The bug I missed was three lines below the one I found.
+
+## 11. Open question I could not settle
+
+The Apps Script advanced service documents itself only as using "the same
+objects, methods, and parameters as the public API", and points at a separate
+page — *How method signatures are determined* — that I have not seen.
+
+So the REST shapes are now confirmed, but the **argument order of the Apps
+Script wrappers is not**: this board calls
+`Tasks.Tasks.patch(resource, tasklist, task)`,
+`Tasks.Tasks.insert(resource, tasklist)`,
+`Tasks.Tasks.move(tasklist, task, optionalArgs)` and
+`Tasks.Tasks.remove(tasklist, task)`. These follow the usual convention —
+request body first, then path parameters in order, then an options object —
+and that convention is almost certainly right, but "almost certainly" is what
+this whole file is about. It fails at runtime, not in review.

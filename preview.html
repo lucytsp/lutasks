@@ -1141,8 +1141,7 @@ function buildExtra(card){
         if(res && res.success === false) throw new Error(res.error);
         if(res && res.noop){ toast("Already in Today"); return; }
         var from = card.listTitle;
-        toast(res && res.copied ? "Moved to Today (as a copy)" : "Moved to Today",
-              [{ label: "Undo", fn: function(){ undoToday(card, from); } }]);
+        toast("Moved to Today", [{ label: "Undo", fn: function(){ undoToday(card, from); } }]);
         if(api.live) boot();
         else { moveCardLocally(card, todayList); render(); }
       }).catch(function(err){
