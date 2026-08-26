@@ -40,8 +40,10 @@ inventing a colleague.
 
 - **Wall** — a masonry wall of every task, reflowing as cards expand.
 - **Board** — one column per list, closer to the Google Calendar side panel.
-- **Week** — the last five *working* days, each column listing what was closed
-  that day and why. Weekends are skipped rather than shown empty.
+- **Looking back** — the last five *working* days, each column listing what was
+  closed that day and why. Weekends are skipped rather than shown empty. It is
+  separated from Wall and Board in the control and sits on its own recessed
+  ground, because it shows the past and the other two show what is outstanding.
 - Descriptions sit at low opacity, clamped to two lines. Hovering lifts them;
   clicking a card opens it fully and the neighbouring cards slide out of the
   way rather than jumping.
@@ -83,7 +85,7 @@ later from the board.
 
 ## Handing a task to Claude
 
-An open card offers **Copy for Claude** — the full brief (title, list, area,
+An open card offers a **copy icon** — the full brief (title, list, area,
 assignee, age, detail, comments and links) on the clipboard — and **Ask
 Claude**, which opens a new conversation with that brief prefilled. The link
 carries a truncated version because URLs have limits; the copy button carries

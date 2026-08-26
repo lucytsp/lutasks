@@ -161,6 +161,29 @@ button{background:none;border:0;cursor:pointer}
 }
 .seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow-1)}
 
+/* Wall and Board are now; Looking back is not. Separate it in the control
+   so the two are not read as three of the same thing. */
+.seg-sep{width:1px;align-self:stretch;margin:3px 4px;background:var(--line)}
+.seg button.seg-back[aria-pressed="true"]{
+  background:var(--pen);color:#fff;box-shadow:none;
+}
+
+/* the past gets its own ground: recessed, ruled off, and labelled */
+.lookback{
+  margin-top:22px;border:1px solid var(--line);border-radius:12px;
+  background:var(--surface-2);padding:4px 16px 16px;
+}
+.lookback-bar{
+  display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;
+  padding:12px 2px 13px;border-bottom:1px dashed var(--line);margin-bottom:6px;
+}
+.lookback-bar h2{
+  font-family:var(--font-mono);font-size:10.5px;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--pen);margin:0;
+}
+.lookback-bar p{font-size:12.5px;color:var(--ink-faint);margin:0}
+.lookback .board{padding-top:14px}
+
 .btn{
   padding:7px 14px;border-radius:7px;font-size:13.5px;font-weight:500;
   border:1px solid var(--line);background:var(--surface);
@@ -256,8 +279,8 @@ button{background:none;border:0;cursor:pointer}
 
 .card-top{display:flex;align-items:center;gap:7px;margin-bottom:13px;min-height:16px}
 .cat{
-  font-family:var(--font-mono);font-size:10.5px;font-weight:500;
-  letter-spacing:.04em;
+  font-family:var(--font-mono);font-size:10px;font-weight:500;
+  letter-spacing:.07em;text-transform:uppercase;
   padding:2px 6px;border-radius:4px;background:var(--c-chip);
   color:var(--card-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%;
 }
@@ -434,6 +457,14 @@ button{background:none;border:0;cursor:pointer}
 }
 .act:hover{color:var(--card-ink);border-color:var(--card-muted)}
 .act-today{border-color:var(--card-muted);color:var(--card-ink);font-weight:600}
+.act-icon{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:30px;height:25px;padding:0;
+}
+.act-icon svg{
+  width:14px;height:14px;stroke:currentColor;fill:none;
+  stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;
+}
 .act-group{display:flex;gap:4px;margin-left:auto;align-items:center}
 .act-group .act{padding:4px 9px}
 .senior-tag{
@@ -582,7 +613,8 @@ button{background:none;border:0;cursor:pointer}
         <div class="seg" role="group" aria-label="Layout">
           <button id="viewWall" aria-pressed="true">Wall</button>
           <button id="viewBoard" aria-pressed="false">Board</button>
-          <button id="viewWeek" aria-pressed="false">Week</button>
+          <span class="seg-sep" aria-hidden="true"></span>
+          <button id="viewWeek" class="seg-back" aria-pressed="false">Looking back</button>
         </div>
         <div class="pop-wrap">
           <button class="btn" id="displayBtn" aria-expanded="false" aria-controls="displayPop">Display</button>
@@ -1078,6 +1110,9 @@ function buildCard(card, isPreview){
   } else {
     body.addEventListener("click", function(){ openCard(card.id); });
     body.addEventListener("keydown", function(ev){
+      // Only the card itself answers Enter and Space. Without this guard a
+      // space typed into the comment box bubbles up and shuts the card.
+      if(ev.target !== body) return;
       if(ev.key === "Enter" || ev.key === " "){ ev.preventDefault(); openCard(card.id); }
     });
   }
@@ -1091,6 +1126,7 @@ function buildCard(card, isPreview){
 function buildExtra(card){
   var extra = el("div", "card-extra");
   extra.addEventListener("click", function(ev){ ev.stopPropagation(); });
+  extra.addEventListener("keydown", function(ev){ ev.stopPropagation(); });
 
   if((card.comments || []).length){
     var list = el("div", "comments");
@@ -1159,12 +1195,22 @@ function buildExtra(card){
     actions.appendChild(zap);
   }
 
-  var copy = el("button", "act", "Copy for Claude");
+  var COPY_ICON =
+    '<svg viewBox="0 0 24 24" aria-hidden="true">' +
+      '<rect x="9" y="9" width="12" height="12" rx="2.5"></rect>' +
+      '<path d="M5.5 15H4.5A2.5 2.5 0 0 1 2 12.5v-8A2.5 2.5 0 0 1 4.5 2h8A2.5 2.5 0 0 1 15 4.5v1"></path>' +
+    '</svg>';
+  var TICK_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"></path></svg>';
+
+  var copy = el("button", "act act-icon");
   copy.type = "button";
+  copy.innerHTML = COPY_ICON;
+  copy.title = "Copy this task to the clipboard";
+  copy.setAttribute("aria-label", "Copy " + card.title + " to the clipboard");
   copy.addEventListener("click", function(){
     copyText(claudeBrief(card)).then(function(){
-      copy.textContent = "Copied";
-      setTimeout(function(){ copy.textContent = "Copy for Claude"; }, 1800);
+      copy.innerHTML = TICK_ICON;
+      setTimeout(function(){ copy.innerHTML = COPY_ICON; }, 1600);
     }).catch(function(){
       toast("Copying is blocked here — use Ask Claude instead");
     });
@@ -1342,6 +1388,14 @@ function renderWeek(){
 
   var days = lastWeekdays(5);
   var todayKey = new Date().toDateString();
+
+  var shell = el("div", "lookback");
+  var bar = el("div", "lookback-bar");
+  bar.appendChild(el("h2", null, "Looking back"));
+  bar.appendChild(el("p", null,
+    "Closed work over the last five working days. Nothing here is outstanding."));
+  shell.appendChild(bar);
+
   var board = el("div", "board");
 
   days.forEach(function(day){
@@ -1364,7 +1418,8 @@ function renderWeek(){
     board.appendChild(col);
   });
 
-  stage.appendChild(board);
+  shell.appendChild(board);
+  stage.appendChild(shell);
 
   var total = closed.length;
   tallyEl.textContent = total === 1 ? "1 task closed this week"
