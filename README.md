@@ -194,10 +194,26 @@ from `googleusercontent.com`, so there it waits up to eight seconds for the
 sandbox to inject `google.script` before giving up. Anywhere else it does not
 wait at all.
 
+## Your settings stay yours
+
+`Config.gs` holds your list names, your colleagues and your email addresses. It
+is **gitignored** — it lives on your machine and in your Apps Script project and
+never reaches GitHub. What is shared is `Config.example.gs`, a generic template.
+
+    cp Config.example.gs Config.gs
+
+Do that first on any fresh clone, then fill it in. `deploy.sh` refuses to run
+without it rather than pushing a broken project.
+
+Only one of the two is ever sent to Apps Script: `.claspignore` allows
+`Config.gs` and excludes the template, because two files each declaring
+`const CONFIG` is a redeclaration error and the whole script would fail.
+
 ## Setup
 
 1. Create a project at https://script.google.com.
-2. Copy in `Config.gs`, `Code.gs`, `index.html` and `appsscript.json`.
+2. Copy in `Config.gs` (from the template above), `Code.gs`, `index.html` and
+   `appsscript.json`.
 3. **Services → +** → add **Google Tasks API** (advanced service, `Tasks`).
 4. Edit `CONFIG` in `Code.gs`:
    - `LISTS` — the lists to show, in order, each with one of the eight colours
@@ -264,7 +280,8 @@ polling.
 
 ## Files
 
-    Config.gs           lists, colours, seniors, people — everything you tune
+    Config.example.gs   the shared template — generic, safe to publish
+    Config.gs           your real settings — gitignored, never committed
     Code.gs             Apps Script backend — Tasks API, paginated
     LEARNINGS.md        mistakes made building this, and what they taught
     index.html          the whole front end, one file, no build step

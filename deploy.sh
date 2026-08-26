@@ -12,6 +12,12 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
+if [ ! -f Config.gs ]; then
+  echo "No Config.gs — that file is gitignored, so a fresh clone has none." >&2
+  echo "  cp Config.example.gs Config.gs   then fill in your lists and people." >&2
+  exit 1
+fi
+
 if [ ! -f .clasp.json ]; then
   echo "No .clasp.json here. Either:" >&2
   echo "  clasp create-script --type webapp --title 'Task Wall' --rootDir .   (new project)" >&2

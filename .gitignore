@@ -1,3 +1,6 @@
 .clasp.json
 .clasp-deployment
 node_modules/
+
+# your real settings — never committed
+Config.gs
