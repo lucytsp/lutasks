@@ -1185,7 +1185,7 @@ function buildExtra(card){
         if(res && res.success === false) throw new Error(res.error);
         input.value = "";
         toast("Comment added");
-        if(api.live) boot();
+        if(api.isLive()) boot();
         else {
           card.comments.push({ when: "today", who: "you", text: text });
           render();
@@ -1212,7 +1212,7 @@ function buildExtra(card){
         if(res && res.noop){ toast("Already in Today"); return; }
         var from = card.listTitle;
         toast("Moved to Today", [{ label: "Undo", fn: function(){ undoToday(card, from); } }]);
-        if(api.live) boot();
+        if(api.isLive()) boot();
         else { moveCardLocally(card, todayList); render(); }
       }).catch(function(err){
         toast(String((err && err.message) || err));
@@ -1267,7 +1267,7 @@ function buildExtra(card){
         api.move(card.listId, card.id, pair[1]).then(function(res){
           if(res && res.success === false) throw new Error(res.error);
           toast("Moved in " + card.listTitle);
-          if(api.live) boot();
+          if(api.isLive()) boot();
         }).catch(function(err){
           toast("Could not move that task");
           if(window.console) console.error(err);
@@ -1304,7 +1304,7 @@ function moveCardLocally(card, list){
 function undoToday(card, backToTitle){
   var back = state.lists.filter(function(l){ return l.title === backToTitle; })[0];
   if(!back) return;
-  api.sendToToday && api.live
+  api.sendToToday && api.isLive()
     ? google.script.run
         .withSuccessHandler(function(){ boot(); })
         .withFailureHandler(function(){ toast("Could not put that back"); })
@@ -1638,12 +1638,18 @@ function updateRail(){
 
 /* ---------- backend --------------------------------------------------- */
 var api = {
-  live: typeof google !== "undefined" && google.script && google.script.run,
+  /* Checked on every call, never cached. The Apps Script sandbox injects
+     google.script asynchronously, so a boolean captured while this file is
+     parsing can latch to false on a perfectly good deployment — and then the
+     board silently serves demo data forever. */
+  isLive: function(){
+    return typeof google !== "undefined" && !!(google.script && google.script.run);
+  },
 
   load: function(){
     var self = this;
     return new Promise(function(resolve, reject){
-      if(!self.live){
+      if(!self.isLive()){
         // Demo mode: turn "weeks ago" into real due dates, and place closed
         // work on real working days so the Week view has something to show.
         var now = Date.now(), n = 0;
@@ -1695,7 +1701,7 @@ var api = {
   add: function(listId, title, notes, due){
     var self = this;
     return new Promise(function(resolve, reject){
-      if(!self.live){ resolve({ success:true, demo:true }); return; }
+      if(!self.isLive()){ resolve({ success:true, demo:true }); return; }
       google.script.run
         .withSuccessHandler(resolve)
         .withFailureHandler(reject)
@@ -1706,7 +1712,7 @@ var api = {
   comment: function(listId, taskId, text){
     var self = this;
     return new Promise(function(resolve, reject){
-      if(!self.live){ resolve({ success:true, demo:true }); return; }
+      if(!self.isLive()){ resolve({ success:true, demo:true }); return; }
       google.script.run.withSuccessHandler(resolve).withFailureHandler(reject)
         .addComment(listId, taskId, text);
     });
@@ -1715,7 +1721,7 @@ var api = {
   sendToToday: function(listId, taskId){
     var self = this;
     return new Promise(function(resolve, reject){
-      if(!self.live){ resolve({ success:true, demo:true }); return; }
+      if(!self.isLive()){ resolve({ success:true, demo:true }); return; }
       google.script.run.withSuccessHandler(resolve).withFailureHandler(reject)
         .sendToToday(listId, taskId);
     });
@@ -1724,7 +1730,7 @@ var api = {
   move: function(listId, taskId, direction){
     var self = this;
     return new Promise(function(resolve, reject){
-      if(!self.live){ resolve({ success:true, demo:true }); return; }
+      if(!self.isLive()){ resolve({ success:true, demo:true }); return; }
       google.script.run.withSuccessHandler(resolve).withFailureHandler(reject)
         .moveTask(listId, taskId, direction);
     });
@@ -1733,7 +1739,7 @@ var api = {
   setStatus: function(listId, taskId, completed, note){
     var self = this;
     return new Promise(function(resolve, reject){
-      if(!self.live){ resolve({ success:true, demo:true }); return; }
+      if(!self.isLive()){ resolve({ success:true, demo:true }); return; }
       google.script.run
         .withSuccessHandler(resolve)
         .withFailureHandler(reject)
@@ -1750,7 +1756,7 @@ function askCloseNote(card){
       if(res && res.success === false) throw new Error(res.error);
       card.closeNote = { when: "today", text: text };
       toast("Note saved");
-      if(api.live) boot(); else render();
+      if(api.isLive()) boot(); else render();
     }).catch(function(err){
       toast("Could not save that note");
       if(window.console) console.error(err);
@@ -1951,7 +1957,7 @@ addForm.addEventListener("submit", function(ev){
     refreshCompose();
     closeSheet();
     toast("Task added");
-    if(api.live) boot();
+    if(api.isLive()) boot();
   }).catch(function(err){
     sheetError.textContent = String((err && err.message) || err);
     sheetError.hidden = false;
@@ -2107,7 +2113,7 @@ if(document.fonts && document.fonts.ready){
  * not readable from here — google.script.url is the supported way in.
  *   ?view=board&lists=JOBSMAN%20TODO&q=timesheet&done=1                   */
 function readParams(done){
-  if(api.live && typeof google !== "undefined" && google.script && google.script.url){
+  if(api.isLive() && typeof google !== "undefined" && google.script && google.script.url){
     var settled = false;
     var finish = function(p){ if(!settled){ settled = true; done(p || {}); } };
     try {
@@ -2148,11 +2154,15 @@ function boot(){
     if(!board || !board.lists){ throw new Error("No lists came back."); }
     ingest(board);
     applyParams(boot._params);
-    if(!api.live){
+    if(!api.isLive()){
       var b = el("div", "banner");
-      b.appendChild(el("strong", null, "Preview."));
-      b.appendChild(el("span", null,
-        "Sample tasks transcribed from your screenshots. Deployed in Apps Script this reads your real lists."));
+      var onScript = inAppsScript();
+      b.appendChild(el("strong", null, onScript ? "Not connected." : "Preview —"));
+      b.appendChild(el("span", null, onScript
+        ? "This is sample data, and nothing here is saved. The board could not " +
+          "reach Google Tasks. Reload; if it persists, check the Apps Script " +
+          "execution log."
+        : "sample data, not connected to Google Tasks. Nothing here is saved."));
       document.querySelector(".wrap").insertBefore(b, stage);
     }
     render();
@@ -2185,11 +2195,44 @@ function boot(){
     d.setAttribute("aria-pressed", "true");
     d.textContent = "Hide done";
   }
-  readParams(function(params){
-    boot._params = params;      // a link-in view wins over the saved one
-    boot();
+  // Give the Apps Script sandbox a moment to inject google.script before
+  // deciding whether this is a real deployment. Bounded, so a genuinely
+  // standalone page still starts promptly.
+  whenBackendReady(function(){
+    readParams(function(params){
+      boot._params = params;    // a link-in view wins over the saved one
+      boot();
+    });
   });
 })();
+
+/* Apps Script serves user content from googleusercontent.com inside the
+   sandbox frame, so the host says whether a backend is even possible. Only
+   wait when one is expected — a standalone copy should not stall. */
+function inAppsScript(){
+  var here = (window.location.hostname || "") + " " + (document.referrer || "");
+  return /googleusercontent\.com|script\.google\.com/.test(here);
+}
+
+function whenBackendReady(done){
+  var waited = 0, step = 40, limit = inAppsScript() ? 8000 : 250;
+  (function check(){
+    if(api.isLive()){
+      if(window.console) console.log("Task Wall: connected to Google Tasks.");
+      return done();
+    }
+    if(waited >= limit){
+      if(window.console && inAppsScript()){
+        console.warn("Task Wall: google.script.run never appeared after " +
+                     limit + "ms. This is a deployment, so the backend should " +
+                     "be there — check the Apps Script execution log.");
+      }
+      return done();
+    }
+    waited += step;
+    setTimeout(check, step);
+  })();
+}
 </script>
 </body>
 </html>

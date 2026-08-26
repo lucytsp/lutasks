@@ -239,7 +239,55 @@ bugs were. Reading a resource definition for one answer and stopping is the
 same mistake as reading `tasks.list` for pagination and missing `showAssigned`,
 which is now the third time in this project.
 
-## 13. Open question I could not settle
+## 13. I diagnosed a live bug as user error, confidently, from a coincidence
+
+Lucy deployed the board and reported that tasks she created were not appearing
+in Google Tasks — and that UNSORTED showed two tasks that Google Tasks did not
+have.
+
+Two was also exactly how many UNSORTED tasks my demo fixture contains. I checked
+that they matched, found they did, and told her she was looking at the preview
+rather than her deployment. I was wrong, and the reasoning was circular: the
+only code path to demo data was `api.live === false`, I could not see how that
+could happen on a real deployment, so I concluded it had not.
+
+Then she pasted the URL. `script.google.com/a/macros/tspartners.co.uk/s/…/exec`
+— a real, domain-scoped, deployed web app.
+
+The bug was one line:
+
+    live: typeof google !== "undefined" && google.script && google.script.run,
+
+A capability check, evaluated once while the file parses, cached as a boolean
+forever. The Apps Script sandbox injects `google.script` asynchronously, so on a
+perfectly good deployment this can latch to `false` before the backend arrives —
+and then every call in the app silently takes the demo branch. No error, no
+failed request, no clue. Just a board that looks right and saves nothing.
+
+It is now a function, checked at each call, and start-up waits for the sandbox —
+but only when the host is `googleusercontent.com`, so a standalone copy still
+starts immediately.
+
+Three things went wrong, and only one of them was the code:
+
+- **A cached capability check.** Anything asynchronous in the environment must be
+  re-checked, not captured. "Is the backend there?" was true later and false at
+  the moment I asked.
+- **A silent fallback on a path that should be loud.** Falling back to sample
+  data is right for a standalone preview and completely wrong for a deployment.
+  The page now distinguishes those two by host and says "Not connected — nothing
+  here is saved" when a backend was expected.
+- **Matching a coincidence and stopping.** "Two tasks, and my fixture has two"
+  is weak evidence that felt strong because it was specific. The question that
+  would have settled it in one line — *what URL are you on?* — is the one I
+  should have asked first, before building a theory to explain the symptom.
+
+**Lesson.** When a user reports something the code "cannot" do, the belief that
+it cannot is the thing to test first. And ask for the cheap discriminating fact
+before constructing an explanation, because once you have an explanation you
+will go looking for evidence that fits it.
+
+## 14. Open question I could not settle
 
 Nothing outstanding on the Tasks API. Everything this board depends on has now
 been checked against the reference rather than recalled.

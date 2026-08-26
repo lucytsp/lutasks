@@ -182,6 +182,18 @@ does not suit a 20px display serif and a 16px grotesque equally. All nine
 families come from a single stylesheet and the browser fetches only the faces
 actually rendered.
 
+## If the board shows sample data
+
+A banner reading **"Not connected"** means the page could not reach Google
+Tasks and nothing you do is being saved. On a deployment that is a fault —
+check the Apps Script execution log. A banner reading **"Preview"** is the
+standalone copy behaving correctly, with no backend behind it.
+
+The page decides which it is from the host: Apps Script serves user content
+from `googleusercontent.com`, so there it waits up to eight seconds for the
+sandbox to inject `google.script` before giving up. Anywhere else it does not
+wait at all.
+
 ## Setup
 
 1. Create a project at https://script.google.com.
