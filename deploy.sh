@@ -20,7 +20,7 @@ fi
 
 if [ ! -f .clasp.json ]; then
   echo "No .clasp.json here. Either:" >&2
-  echo "  clasp create-script --type webapp --title 'Task Wall' --rootDir .   (new project)" >&2
+  echo "  clasp create --type webapp --title 'Task Wall' --rootDir .  (new project, clasp 2.x)" >&2
   echo "  clasp clone <scriptId>                                              (existing)" >&2
   exit 1
 fi
