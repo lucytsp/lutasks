@@ -123,33 +123,60 @@ function viewer_() {
 /**
  * The whole board in one round trip: every configured list, every task.
  */
+/** A stable colour for a list we were not told about. */
+function colourFor_(title) {
+  var h = 0;
+  for (var i = 0; i < title.length; i++) h = (h * 31 + title.charCodeAt(i)) >>> 0;
+  return PALETTE[h % PALETTE.length];
+}
+
+/**
+ * Every list the account has, in a sensible order.
+ *
+ * CONFIG.LISTS pins order and colour for the lists you care about; anything
+ * else you create in Google Tasks still shows up, coloured from a hash of its
+ * title so it keeps the same colour every time. Only CONFIG.HIDE_LISTS is
+ * excluded. Making CONFIG.LISTS a whitelist meant a new list silently never
+ * appeared, which is a bad way to find out you had made one.
+ */
+function orderedLists_(available) {
+  const hidden = {};
+  (CONFIG.HIDE_LISTS || []).forEach(function (t) { hidden[t.toLowerCase()] = true; });
+
+  const byTitle = {};
+  available.forEach(function (l) { byTitle[l.title] = l; });
+
+  const out = [], seen = {};
+
+  (CONFIG.LISTS || []).forEach(function (cfg) {
+    const found = byTitle[cfg.title];
+    if (!found || hidden[cfg.title.toLowerCase()]) return;
+    out.push({ id: found.id, title: found.title, colour: cfg.colour || colourFor_(found.title) });
+    seen[found.id] = true;
+  });
+
+  available
+    .filter(function (l) { return !seen[l.id] && !hidden[l.title.toLowerCase()]; })
+    .sort(function (a, b) { return a.title.localeCompare(b.title); })
+    .forEach(function (l) {
+      out.push({ id: l.id, title: l.title, colour: colourFor_(l.title) });
+    });
+
+  return out;
+}
+
 function getBoard() {
   const available = Tasks.Tasklists.list({ maxResults: 100 }).items || [];
-  const byTitle = {};
-  available.forEach(function (l) { byTitle[l.title] = l.id; });
 
-  // Configured lists first, in order; otherwise everything we found.
-  let wanted = CONFIG.LISTS.filter(function (c) { return byTitle[c.title]; });
-  if (!wanted.length) {
-    wanted = available.map(function (l, i) {
-      return { title: l.title, colour: PALETTE[i % PALETTE.length] };
-    });
-  }
-
-  const lists = wanted.map(function (cfg, i) {
-    const id = byTitle[cfg.title];
+  const lists = orderedLists_(available).map(function (cfg) {
+    const id = cfg.id;
     const tasks = listAllTasks_(id).map(function (t) { return toCard_(t, id); });
     // position is an opaque lexicographic string, and it is what the Google
     // Tasks app orders by — so sort on it rather than on fetch order.
     tasks.sort(function (a, b) {
       return a.position < b.position ? -1 : a.position > b.position ? 1 : 0;
     });
-    return {
-      id: id,
-      title: cfg.title,
-      colour: cfg.colour || PALETTE[i % PALETTE.length],
-      tasks: tasks
-    };
+    return { id: id, title: cfg.title, colour: cfg.colour, tasks: tasks };
   });
 
   return {

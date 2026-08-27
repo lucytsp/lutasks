@@ -17,10 +17,11 @@
  */
 
 const CONFIG = {
-  // Lists shown on the board, in order. Titles must match your Google Tasks
-  // list names EXACTLY, including case. A list that does not exist is skipped
-  // silently, so if a column is missing this is the first thing to check.
-  // Leave the array empty to show every list you have.
+  // Pins the order and colour of the lists you care about. This is NOT a
+  // whitelist — every list on the account appears, and anything not named here
+  // is appended alphabetically with a colour derived from its title, so it
+  // stays the same colour each time. Titles must match Google Tasks exactly,
+  // including case; one that does not match is simply not pinned.
   // The colour key must be one of the nine in PALETTE below.
   LISTS: [
     { title: 'UNSORTED',  colour: 'sand'   },
@@ -31,6 +32,11 @@ const CONFIG = {
     { title: 'SYSADMIN',  colour: 'teal'   },
     { title: 'SHELVED',   colour: 'slate'  }
   ],
+
+  // Lists never shown, whatever else you have. Everything not listed here
+  // appears automatically, so a list you make in Google Tasks turns up on the
+  // board without you editing this file.
+  HIDE_LISTS: [],
 
   // Where the add form writes by default. Created if it does not exist.
   INTAKE_LIST: 'UNSORTED',

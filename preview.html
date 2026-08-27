@@ -456,6 +456,19 @@ button{background:none;border:0;cursor:pointer}
 }
 .act:hover{color:var(--card-ink);border-color:var(--card-muted)}
 .act-today{border-color:var(--card-muted);color:var(--card-ink);font-weight:600}
+
+/* filing a task: every other list, one click each */
+.move-picker{display:none;flex-wrap:wrap;gap:5px;margin-top:11px}
+.move-picker.open{display:flex}
+.move-chip{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:4px 11px 4px 8px;border-radius:999px;font-size:11.5px;
+  border:1px solid var(--c-bd);background:var(--c-chip);color:var(--card-ink);
+  transition:border-color .15s,opacity .15s;
+}
+.move-chip:hover{border-color:var(--card-muted)}
+.move-chip:disabled{opacity:.5;cursor:default}
+.move-chip .dot{width:8px;height:8px;border-radius:50%;flex:none}
 .act-icon{
   display:inline-flex;align-items:center;justify-content:center;
   width:30px;height:25px;padding:0;
@@ -1222,6 +1235,51 @@ function buildExtra(card){
     '</svg>';
   var TICK_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"></path></svg>';
 
+  if(state.viewer.isSenior && state.lists.length > 1){
+    var pickerOpen = false;
+    var picker = el("div", "move-picker");
+    state.lists.forEach(function(list){
+      if(list.id === card.listId) return;                 // already there
+      var chip = el("button", "move-chip");
+      chip.type = "button";
+      var dot = el("span", "dot");
+      dot.style.background = "var(--t-" + list.colour + "-bd)";
+      chip.appendChild(dot);
+      chip.appendChild(el("span", null, list.title));
+      chip.setAttribute("aria-label", "Move " + card.title + " to " + list.title);
+      chip.addEventListener("click", function(){
+        var from = card.listTitle;
+        Array.prototype.forEach.call(picker.children, function(c){ c.disabled = true; });
+        api.moveToList(card.listId, card.id, list.title).then(function(res){
+          if(res && res.success === false) throw new Error(res.error);
+          if(res && res.noop){ toast("Already in " + list.title); return; }
+          toast("Moved to " + list.title,
+                [{ label: "Undo", fn: function(){ undoMove(card, from); } }]);
+          if(api.isLive()) boot();
+          else { moveCardLocally(card, list); render(); }
+        }).catch(function(err){
+          toast(String((err && err.message) || err));
+          if(window.console) console.error(err);
+        }).then(function(){
+          Array.prototype.forEach.call(picker.children, function(c){ c.disabled = false; });
+        });
+      });
+      picker.appendChild(chip);
+    });
+
+    var moveBtn = el("button", "act", "Move to…");
+    moveBtn.type = "button";
+    moveBtn.setAttribute("aria-expanded", "false");
+    moveBtn.addEventListener("click", function(){
+      pickerOpen = !pickerOpen;
+      picker.classList.toggle("open", pickerOpen);
+      moveBtn.setAttribute("aria-expanded", pickerOpen ? "true" : "false");
+      reflow(false);
+    });
+    actions.appendChild(moveBtn);
+    extra.appendChild(picker);
+  }
+
   var copy = el("button", "act act-icon");
   copy.type = "button";
   copy.innerHTML = COPY_ICON;
@@ -1292,6 +1350,16 @@ function moveCardLocally(card, list){
   card.listId = list.id;
   card.listTitle = list.title;
   card.colour = list.colour;
+}
+
+function undoMove(card, backToTitle){
+  var back = state.lists.filter(function(l){ return l.title === backToTitle; })[0];
+  if(!back) return;
+  api.moveToList(card.listId, card.id, backToTitle).then(function(res){
+    if(res && res.success === false) throw new Error(res.error);
+    if(api.isLive()) boot();
+    else { moveCardLocally(card, back); render(); }
+  }).catch(function(){ toast("Could not put that back"); });
 }
 
 function undoToday(card, backToTitle){
@@ -1708,6 +1776,15 @@ var api = {
       if(!self.isLive()){ resolve({ success:true, demo:true }); return; }
       google.script.run.withSuccessHandler(resolve).withFailureHandler(reject)
         .addComment(listId, taskId, text);
+    });
+  },
+
+  moveToList: function(listId, taskId, targetTitle){
+    var self = this;
+    return new Promise(function(resolve, reject){
+      if(!self.isLive()){ resolve({ success:true, demo:true }); return; }
+      google.script.run.withSuccessHandler(resolve).withFailureHandler(reject)
+        .sendToList(listId, taskId, targetTitle);
     });
   },
 

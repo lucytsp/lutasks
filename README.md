@@ -16,6 +16,24 @@ Apps Script removes the two hardest parts of building on the Tasks API:
 - **A free server-side store.** `PropertiesService` and `CacheService` are there
   if the board ever needs to remember something the Tasks API cannot hold.
 
+## The board finds your lists itself
+
+`tasklists.list` returns every list on the account, so you do not have to tell
+the board what you have. `CONFIG.LISTS` only *pins* order and colour for the
+lists you care about; anything else appears automatically, appended
+alphabetically, coloured from a hash of its title so it keeps the same colour
+every time. `CONFIG.HIDE_LISTS` is the only thing that excludes a list.
+
+This was originally a whitelist, which meant a list you created in Google Tasks
+silently never showed up — a bad way to find out you had made one.
+
+One limit worth knowing: the web app runs as **you** (`executeAs:
+USER_DEPLOYING`), so the API always returns *your* lists, whoever is looking.
+That is what makes it a shared board. Showing each colleague their own tasks
+instead would mean `executeAs: USER_ACCESSING`, which is a different product —
+everyone would authorise individually and see only their own lists, and none of
+your board.
+
 ## Colour without a colour field
 
 The Tasks API has no colour, label, tag or priority field, and no way to add
@@ -74,6 +92,9 @@ Anyone listed in `CONFIG.SENIORS` (matched on full email address) also gets:
   `» 26 Aug · matt: blocked on the fee review change`
 - **Reordering** within a list — Top, Up, Down, via `Tasks.move`.
 - **Send to Today**, which moves a task into the `TODAY` list and back.
+- **Move to…**, a chip for every other list, one click to file a task. Both go
+  through `tasks.move` with a `destinationTasklist`, so the task keeps its
+  identity and its link back to the original email. Both offer Undo.
 
 Everyone else gets a read-and-add board. Because comments live in the task's
 own notes rather than a side table, they survive losing this script and are
