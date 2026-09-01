@@ -361,6 +361,21 @@ button{background:none;border:0;cursor:pointer}
   -webkit-mask-image:none;mask-image:none;white-space:pre-wrap;
 }
 
+/* dragging to reorder — Board view only, where a position means something */
+.card[draggable="true"]{cursor:grab}
+.card.is-dragging{opacity:.35;cursor:grabbing}
+.card.is-dragging .card-body{transform:none;box-shadow:var(--shadow-1)}
+.drop-line{
+  height:3px;border-radius:3px;background:var(--accent);
+  margin:3px 0;flex:none;
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent);
+}
+.column.drag-over{
+  background:color-mix(in srgb,var(--accent) 5%,transparent);
+  border-radius:10px;
+}
+@media (prefers-reduced-motion:reduce){ .card.is-dragging{opacity:.5} }
+
 /* the signature line — the tick is always here, bottom left, on every card,
    so it never moves depending on what the card contains */
 .card-foot{
@@ -1141,7 +1156,10 @@ function buildCard(card, isPreview){
     body.tabIndex = -1;
     wrap.classList.add("is-open");        // the preview always reads in full
   } else {
-    body.addEventListener("click", function(){ openCard(card.id); });
+    body.addEventListener("click", function(){
+      if(drag.id) return;              // finishing a drag, not selecting
+      openCard(card.id);
+    });
     body.addEventListener("keydown", function(ev){
       // Only the card itself answers Enter and Space. Without this guard a
       // space typed into the comment box bubbles up and shuts the card.
@@ -1577,6 +1595,147 @@ function renderWeek(){
                                     : total + " tasks closed in the last seven days";
 }
 
+/* ---------- dragging to reorder --------------------------------------- *
+ * Board view only. On the Wall, cards from every list are interleaved, so a
+ * gap between two of them does not correspond to a position in any list.    */
+var drag = { id: null, fromList: null, line: null };
+
+function dropLine(){
+  if(!drag.line) drag.line = el("div", "drop-line");
+  return drag.line;
+}
+
+/* The card the dragged one would land above, or null for the end. */
+function cardBelow(column, y){
+  var cards = Array.prototype.slice.call(
+    column.querySelectorAll(".card:not(.is-dragging)"));
+  for(var i = 0; i < cards.length; i++){
+    var r = cards[i].getBoundingClientRect();
+    if(y < r.top + r.height / 2) return cards[i];
+  }
+  return null;
+}
+
+/* tasks.move places a task AFTER `previous`, so the anchor is whatever ends
+   up above it — or nothing at all when it lands first. */
+function previousIdFor(column, before){
+  var node = before ? before.previousElementSibling
+                    : column.querySelector(".card:not(.is-dragging):last-of-type");
+  while(node && !node.classList.contains("card")) node = node.previousElementSibling;
+  if(node && node.classList.contains("is-dragging")){
+    node = node.previousElementSibling;
+    while(node && !node.classList.contains("card")) node = node.previousElementSibling;
+  }
+  return node ? node.dataset.id : null;
+}
+
+function makeDraggable(wrap, card){
+  wrap.draggable = true;
+  wrap.addEventListener("dragstart", function(ev){
+    drag.id = card.id;
+    drag.fromList = card.listId;
+    wrap.classList.add("is-dragging");
+    ev.dataTransfer.effectAllowed = "move";
+    // Firefox refuses to start a drag without payload.
+    try { ev.dataTransfer.setData("text/plain", card.id); } catch(e){}
+  });
+  wrap.addEventListener("dragend", function(){
+    wrap.classList.remove("is-dragging");
+    if(drag.line && drag.line.parentNode) drag.line.parentNode.removeChild(drag.line);
+    Array.prototype.forEach.call(document.querySelectorAll(".column.drag-over"),
+      function(c){ c.classList.remove("drag-over"); });
+    drag.id = null;
+  });
+}
+
+function makeDropTarget(column, list){
+  column.addEventListener("dragover", function(ev){
+    if(!drag.id) return;
+    ev.preventDefault();
+    ev.dataTransfer.dropEffect = "move";
+    column.classList.add("drag-over");
+    var before = cardBelow(column, ev.clientY);
+    var line = dropLine();
+    if(before) column.insertBefore(line, before);
+    else column.appendChild(line);
+  });
+
+  column.addEventListener("dragleave", function(ev){
+    if(column.contains(ev.relatedTarget)) return;
+    column.classList.remove("drag-over");
+  });
+
+  column.addEventListener("drop", function(ev){
+    if(!drag.id) return;
+    ev.preventDefault();
+    column.classList.remove("drag-over");
+
+    var card = state.cards.filter(function(c){ return c.id === drag.id; })[0];
+    if(!card) return;
+
+    var before = drag.line && drag.line.parentNode === column
+      ? drag.line.nextElementSibling : cardBelow(column, ev.clientY);
+    while(before && !before.classList.contains("card")) before = before.nextElementSibling;
+
+    var previousId = previousIdFor(column, before);
+    if(card.listId === list.id && previousId === card.id) return;   // no-op
+
+    var fromList = card.listTitle, fromPrevious = previousSiblingId(card);
+    placeCardLocally(card, list, before ? before.dataset.id : null);
+    render();
+
+    api.place(drag.fromList, card.id, list.id, previousId).then(function(res){
+      if(res && res.success === false) throw new Error(res.error);
+      if(list.id !== drag.fromList){
+        toast("Moved to " + list.title,
+              [{ label:"Undo", fn: function(){ undoPlace(card, fromList, fromPrevious); } }]);
+      }
+      if(api.isLive()) boot();
+    }).catch(function(err){
+      toast(String((err && err.message) || err));
+      if(api.isLive()) boot();
+      if(window.console) console.error(err);
+    });
+  });
+}
+
+/* Where a card sits now, so a failed or unwanted move can be put back. */
+function previousSiblingId(card){
+  var siblings = state.cards.filter(function(c){ return c.listId === card.listId; });
+  var i = siblings.indexOf(card);
+  return i > 0 ? siblings[i - 1].id : null;
+}
+
+function placeCardLocally(card, list, beforeId){
+  var i = state.cards.indexOf(card);
+  if(i > -1) state.cards.splice(i, 1);
+  card.listId = list.id;
+  card.listTitle = list.title;
+  card.colour = list.colour;
+
+  var at = state.cards.length;
+  if(beforeId){
+    for(var n = 0; n < state.cards.length; n++){
+      if(state.cards[n].id === beforeId){ at = n; break; }
+    }
+  } else {
+    for(var m = state.cards.length - 1; m >= 0; m--){
+      if(state.cards[m].listId === list.id){ at = m + 1; break; }
+    }
+  }
+  state.cards.splice(at, 0, card);
+}
+
+function undoPlace(card, backToTitle, previousId){
+  var back = state.lists.filter(function(l){ return l.title === backToTitle; })[0];
+  if(!back) return;
+  api.place(card.listId, card.id, back.id, previousId).then(function(res){
+    if(res && res.success === false) throw new Error(res.error);
+    if(api.isLive()) boot();
+    else { placeCardLocally(card, back, null); render(); }
+  }).catch(function(){ toast("Could not put that back"); });
+}
+
 function renderBoard(cards){
   var board = el("div", "board");
   state.lists.forEach(function(list){
@@ -1591,7 +1750,12 @@ function renderBoard(cards){
     head.appendChild(el("span", "n", String(mine.length)));
     col.appendChild(head);
 
-    mine.forEach(function(c){ col.appendChild(buildCard(c)); });
+    mine.forEach(function(c){
+      var wrap = buildCard(c);
+      if(state.viewer.isSenior && !c.completed) makeDraggable(wrap, c);
+      col.appendChild(wrap);
+    });
+    if(state.viewer.isSenior) makeDropTarget(col, list);
     board.appendChild(col);
   });
   stage.appendChild(board);
@@ -1776,6 +1940,15 @@ var api = {
       if(!self.isLive()){ resolve({ success:true, demo:true }); return; }
       google.script.run.withSuccessHandler(resolve).withFailureHandler(reject)
         .addComment(listId, taskId, text);
+    });
+  },
+
+  place: function(listId, taskId, targetListId, previousId){
+    var self = this;
+    return new Promise(function(resolve, reject){
+      if(!self.isLive()){ resolve({ success:true, demo:true }); return; }
+      google.script.run.withSuccessHandler(resolve).withFailureHandler(reject)
+        .placeTask(listId, taskId, targetListId, previousId || null);
     });
   },
 

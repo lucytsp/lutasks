@@ -106,7 +106,10 @@ from one.
   `showHidden` false — and tasks completed in Google's own apps are *hidden* —
   and `showAssigned` false. Set all three and follow `pageToken`.
 - `position`, `parent`, `hidden` and `links[]` are all **read-only**.
-  Reordering goes through `tasks.move`, not a patch.
+  Reordering goes through `tasks.move`, not a patch. It places a task *after*
+  `previous`; omit `previous` for first position. `destinationTasklist` and
+  `previous` can be sent together, so a cross-list move and a position are one
+  call.
 - `links[]` cannot be written, so a task can never be *copied* between lists —
   the copy would lose its link back to the original email. Use
   `tasks.move` with `destinationTasklist`.

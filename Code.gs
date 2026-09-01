@@ -282,6 +282,45 @@ function sendToToday(listId, taskId) {
 }
 
 /**
+ * Put a task at a specific position, optionally in a different list.
+ * Seniors only.
+ *
+ * One call does both: tasks.move takes destinationTasklist and previous
+ * together. Omitting previous means "first in the list". The task keeps its
+ * identity either way, so a task that came from Gmail keeps its link.
+ */
+function placeTask(listId, taskId, targetListId, previousId) {
+  try {
+    var who = viewer_();
+    if (!who.isSenior) return { success: false, error: 'Only seniors can reorder.' };
+
+    var args = {};
+    var destination = listId;
+    if (targetListId && targetListId !== listId) {
+      args.destinationTasklist = targetListId;
+      destination = targetListId;
+    }
+    if (previousId) args.previous = previousId;
+
+    try {
+      var moved = Tasks.Tasks.move(listId, taskId, args);
+      return { success: true, task: toCard_(moved, destination), listId: destination };
+    } catch (moveErr) {
+      Logger.log('placeTask failed: ' + moveErr);
+      return {
+        success: false,
+        error: args.destinationTasklist
+          ? 'Could not move this one. Repeating tasks cannot be moved between lists.'
+          : 'Could not reorder this one: ' + String(moveErr.message || moveErr)
+      };
+    }
+  } catch (e) {
+    Logger.log('placeTask failed: ' + e);
+    return { success: false, error: String(e.message || e) };
+  }
+}
+
+/**
  * Reorder a task within its list. Seniors only.
  *
  * position cannot be patched — reordering goes through Tasks.move, which

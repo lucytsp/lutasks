@@ -92,9 +92,18 @@ Anyone listed in `CONFIG.SENIORS` (matched on full email address) also gets:
   `» 26 Aug · matt: blocked on the fee review change`
 - **Reordering** within a list — Top, Up, Down, via `Tasks.move`.
 - **Send to Today**, which moves a task into the `TODAY` list and back.
-- **Move to…**, a chip for every other list, one click to file a task. Both go
-  through `tasks.move` with a `destinationTasklist`, so the task keeps its
-  identity and its link back to the original email. Both offer Undo.
+- **Move to…**, a chip for every other list, one click to file a task.
+- **Drag to reorder**, in Board view: drag a card up or down its column to
+  change its order, or across into another column to move it there and place
+  it at the same time. `tasks.move` takes `destinationTasklist` and `previous`
+  together, so both happen in one call and the task keeps its identity — and
+  therefore its link back to the original email.
+
+Dragging is Board view only. On the Wall, cards from every list are
+interleaved, so a gap between two of them does not correspond to a position in
+any list. Top/Up/Down remain on every open card and are the keyboard path.
+
+All of these offer Undo.
 
 Everyone else gets a read-and-add board. Because comments live in the task's
 own notes rather than a side table, they survive losing this script and are
