@@ -84,9 +84,28 @@ itself:
 so it reads correctly in the Google Tasks app too, and shows on the card
 without needing to open it. Reopening a task clears the note.
 
-## Seniors
+## Who can change things
 
-Anyone listed in `CONFIG.SENIORS` (matched on full email address) also gets:
+`CONFIG.EDIT_ACCESS` decides who may reorder, move and comment:
+
+- `'everyone'` **(default)** — anyone who can open the board. The web app is
+  already restricted to your domain, so they can read every task regardless;
+  withholding reordering from them is not a security boundary, only an obstacle.
+- `'seniors'` — you (the deploying account) plus `CONFIG.SENIORS`.
+
+The owner is always allowed, identified with `getEffectiveUser()` rather than
+`getActiveUser()`. That distinction matters: `getActiveUser().getEmail()`
+returns an **empty string** for viewers outside the deploying account's domain,
+and sometimes inside it. Gating writes on it alone leaves the buttons visible
+and silently refusing — which is exactly what happened here.
+
+The **Display** panel now names who the board thinks you are and what you may
+do, and a refused write reports the server's actual reason rather than a
+generic "could not". A permission failure should never be a mystery.
+
+## What editing gets you
+
+With edit access you get:
 
 - **Comments**, stored one per line on the task itself:
   `» 26 Aug · matt: blocked on the fee review change`

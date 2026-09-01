@@ -44,6 +44,13 @@ const CONFIG = {
   // Today's shortlist. "Send to Today" moves a task here and back out again.
   TODAY_LIST: 'TODAY',
 
+  // Who may reorder, move and comment.
+  //   'everyone' — anyone who can open the board. The web app is already
+  //                restricted to your domain, so they can read every task
+  //                regardless; withholding reordering is not a boundary.
+  //   'seniors'  — you (the deploying account) plus the addresses below.
+  EDIT_ACCESS: 'everyone',
+
   // Colleagues who may reorder tasks and leave comments. Everyone else gets a
   // read-and-add board. Match on full email address, lower case.
   SENIORS: [

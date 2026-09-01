@@ -287,7 +287,46 @@ it cannot is the thing to test first. And ask for the cheap discriminating fact
 before constructing an explanation, because once you have an explanation you
 will go looking for evidence that fits it.
 
-## 14. Open question I could not settle
+## 14. Every write was gated on a value that is often empty
+
+Reordering "never worked" on the real deployment. Nor, it turns out, would
+comments, Move to… or Send to Today — all four were gated on
+`viewer_().isSenior`, which compares `Session.getActiveUser().getEmail()`
+against a list of addresses.
+
+That call returns an **empty string** for viewers outside the deploying
+account's domain, and not always reliably inside it. Empty string matches
+nothing, so `isSenior` was false, so every write was refused.
+
+I had *written down* that `getActiveUser()` returns empty off-domain — it is in
+this project's own CLAUDE.md, in the Apps Script template I wrote, and I said
+it out loud when describing what a real deployment would reveal. Then I gated
+four features on it anyway and never connected the two.
+
+Two things made it invisible rather than merely broken:
+
+- **The frontend threw the reason away.** The server returned "Only seniors can
+  reorder", and the catch block replaced it with `toast("Could not move that
+  task")`. The app knew exactly what was wrong and chose not to say.
+- **Every test ran in demo mode**, where `api.move` resolves `{success: true}`
+  without calling anything. Eleven green suites, and not one of them had ever
+  exercised a permission check. I now stand up a fake `google.script.run` and
+  test the gate for real, in both states.
+
+Fixed by identifying the owner with `getEffectiveUser()` — whose authority the
+script runs under, which is reliable — and defaulting `EDIT_ACCESS` to
+'everyone', because the board is already domain-restricted and withholding
+reordering from someone who can read every task is not a boundary, only an
+obstacle.
+
+**Lesson.** Knowing a fact and applying it are different, and writing the fact
+down does not close the gap. The gap closed only when the failure was made
+visible: the board now names who it thinks you are and what you may do, and a
+refused write reports the server's own reason. A permission check that fails
+silently is indistinguishable from a broken feature — which is precisely how it
+was reported.
+
+## 15. Open question I could not settle
 
 Nothing outstanding on the Tasks API. Everything this board depends on has now
 been checked against the reference rather than recalled.

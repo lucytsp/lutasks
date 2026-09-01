@@ -109,14 +109,47 @@ function toCard_(task, listId) {
   };
 }
 
-/** Who is looking, and may they reorder and comment? */
+/**
+ * Who is looking, and may they change things?
+ *
+ * getActiveUser() is who is viewing and returns an EMPTY STRING for anyone
+ * outside the deploying account's domain — and sometimes inside it. Gating
+ * writes on it alone means the buttons are there and silently refuse, which
+ * is exactly what happened.
+ *
+ * getEffectiveUser() is whose authority the script runs under. With
+ * executeAs: USER_DEPLOYING that is always the owner, and it is reliable.
+ *
+ * EDIT_ACCESS decides who may reorder, move and comment:
+ *   'everyone' (default) — anyone who can open the board. The web app is
+ *                          already domain-restricted, so they can read every
+ *                          task anyway; withholding reordering from them is
+ *                          not a security boundary, only an obstacle.
+ *   'seniors'            — the owner, plus CONFIG.SENIORS.
+ */
 function viewer_() {
-  var email = '';
+  var email = '', owner = '';
   try { email = Session.getActiveUser().getEmail() || ''; } catch (e) { email = ''; }
+  try { owner = Session.getEffectiveUser().getEmail() || ''; } catch (e) { owner = ''; }
+
   var seniors = (CONFIG.SENIORS || []).map(function (s) { return s.toLowerCase(); });
+  var isOwner = !!email && !!owner && email.toLowerCase() === owner.toLowerCase();
+  var isSenior = isOwner || (!!email && seniors.indexOf(email.toLowerCase()) > -1);
+  var restricted = (CONFIG.EDIT_ACCESS || 'everyone') === 'seniors';
+
   return {
     email: email,
-    isSenior: !!email && seniors.indexOf(email.toLowerCase()) > -1
+    owner: owner,
+    isOwner: isOwner,
+    isSenior: isSenior,
+    canEdit: restricted ? isSenior : true,
+    // Why not, in words, so the board can say so instead of failing quietly.
+    why: restricted && !isSenior
+      ? (email
+          ? email + ' is not listed in CONFIG.SENIORS.'
+          : 'Google did not say who you are — getActiveUser() returned nothing, ' +
+            'which happens outside the owner\'s domain.')
+      : ''
   };
 }
 
@@ -194,7 +227,7 @@ function getBoard() {
 function addComment(listId, taskId, text) {
   try {
     var who = viewer_();
-    if (!who.isSenior) return { success: false, error: 'Only seniors can comment.' };
+    if (!who.canEdit) return { success: false, error: 'You cannot comment here. ' + who.why };
 
     text = (text || '').trim().replace(/[\r\n]+/g, ' ');
     if (!text) return { success: false, error: 'Write something first.' };
@@ -248,7 +281,7 @@ function addComment(listId, taskId, text) {
 function sendToList(listId, taskId, targetTitle) {
   try {
     var who = viewer_();
-    if (!who.isSenior) return { success: false, error: 'Only seniors can move tasks between lists.' };
+    if (!who.canEdit) return { success: false, error: 'You cannot move tasks here. ' + who.why };
 
     var lists = Tasks.Tasklists.list({ maxResults: 100 }).items || [];
     var target = lists.filter(function (l) { return l.title === targetTitle; })[0];
@@ -292,7 +325,7 @@ function sendToToday(listId, taskId) {
 function placeTask(listId, taskId, targetListId, previousId) {
   try {
     var who = viewer_();
-    if (!who.isSenior) return { success: false, error: 'Only seniors can reorder.' };
+    if (!who.canEdit) return { success: false, error: 'You cannot reorder here. ' + who.why };
 
     var args = {};
     var destination = listId;
@@ -329,7 +362,7 @@ function placeTask(listId, taskId, targetListId, previousId) {
 function moveTask(listId, taskId, direction) {
   try {
     var who = viewer_();
-    if (!who.isSenior) return { success: false, error: 'Only seniors can reorder.' };
+    if (!who.canEdit) return { success: false, error: 'You cannot reorder here. ' + who.why };
 
     // Only top-level, uncompleted tasks are reordered here: a completed and
     // hidden task can only move to position 0 (previous must be empty), and

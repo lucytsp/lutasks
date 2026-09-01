@@ -221,6 +221,9 @@ button{background:none;border:0;cursor:pointer}
 .pop-seg button{flex:1}
 .pop-wide{width:100%}
 .pop-note{font-size:11.5px;color:var(--ink-faint);margin:8px 0 0;line-height:1.45}
+.pop-who{font-size:12px;color:var(--ink-muted);margin:0;line-height:1.5}
+.pop-who b{color:var(--ink);font-weight:600}
+.pop-who .no{color:var(--age-cold)}
 
 /* filter rail */
 .rail{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-top:14px}
@@ -665,6 +668,10 @@ button{background:none;border:0;cursor:pointer}
               </div>
             </div>
             <div>
+              <p class="pop-label">You</p>
+              <p class="pop-who" id="whoAmI"></p>
+            </div>
+            <div>
               <button class="btn pop-wide" id="readToggle" aria-pressed="false">Easy read</button>
               <p class="pop-note">Larger text and looser line spacing, in whichever
                 typeface is selected.</p>
@@ -933,7 +940,7 @@ var state = {
   lists: [], people: new Set(), cards: [],
   hidden: new Set(), query: "", showDone: false,
   view: "wall", openId: null, live: false,
-  viewer: { email: "", isSenior: false }, context: ""
+  viewer: { email: "", canEdit: false, why: "" }, context: ""
 };
 
 /* Preferences persist so the board looks the same every time it opens —
@@ -1013,7 +1020,7 @@ function toastPrompt(text, placeholder, onSave){
 function ingest(board){
   state.people = new Set((board.people || []).map(function(p){ return p.toLowerCase(); }));
   state.lists  = board.lists || [];
-  state.viewer = board.viewer || { email: "", isSenior: false };
+  state.viewer = board.viewer || { email: "", canEdit: false, why: "" };
   state.context = board.context || "";
   state.cards  = [];
   var now = Date.now();
@@ -1197,7 +1204,7 @@ function buildExtra(card){
     extra.appendChild(list);
   }
 
-  if(state.viewer.isSenior && !(card.assignment && card.assignment.link)){
+  if(state.viewer.canEdit && !(card.assignment && card.assignment.link)){
     var form = el("form", "comment-form");
     var input = document.createElement("input");
     input.type = "text";
@@ -1222,7 +1229,7 @@ function buildExtra(card){
           render();
         }
       }).catch(function(err){
-        toast("Could not add that comment");
+        toast(String((err && err.message) || err));
         if(window.console) console.error(err);
       }).then(function(){ send.disabled = false; });
     });
@@ -1232,7 +1239,7 @@ function buildExtra(card){
   var actions = el("div", "card-actions");
 
   var todayList = state.lists.filter(function(l){ return l.title === TODAY_TITLE; })[0];
-  if(state.viewer.isSenior && todayList && card.listId !== todayList.id){
+  if(state.viewer.canEdit && todayList && card.listId !== todayList.id){
     var zap = el("button", "act act-today", "Send to Today");
     zap.type = "button";
     zap.setAttribute("aria-label", "Move " + card.title + " to the Today list");
@@ -1260,7 +1267,7 @@ function buildExtra(card){
     '</svg>';
   var TICK_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"></path></svg>';
 
-  if(state.viewer.isSenior && state.lists.length > 1){
+  if(state.viewer.canEdit && state.lists.length > 1){
     var pickerOpen = false;
     var picker = el("div", "move-picker");
     state.lists.forEach(function(list){
@@ -1330,7 +1337,7 @@ function buildExtra(card){
   ask.href = "https://claude.ai/new?q=" + encodeURIComponent(briefForUrl(card));
   actions.appendChild(ask);
 
-  if(state.viewer.isSenior){
+  if(state.viewer.canEdit){
     var group = el("div", "act-group");
     group.appendChild(el("span", "senior-tag", "Order"));
     [["Top","top"],["Up","up"],["Down","down"]].forEach(function(pair){
@@ -1345,7 +1352,7 @@ function buildExtra(card){
           toast("Moved in " + card.listTitle);
           if(api.isLive()) boot();
         }).catch(function(err){
-          toast("Could not move that task");
+          toast(String((err && err.message) || err));
           if(window.console) console.error(err);
         }).then(function(){ b.disabled = false; });
       });
@@ -1493,8 +1500,31 @@ function copyText(text){
   });
 }
 
+/* Who Google says you are, and whether you can change anything. A write that
+   is refused should never be a mystery. */
+function showViewer(){
+  var el2 = document.getElementById("whoAmI");
+  if(!el2) return;
+  var v = state.viewer || {};
+  el2.textContent = "";
+  if(!api.isLive()){
+    el2.appendChild(el("span", null, "Preview — not signed in to anything."));
+    return;
+  }
+  var name = el("b", null, v.email || "not identified");
+  el2.appendChild(name);
+  el2.appendChild(el("span", null, v.canEdit
+    ? " — you can add, tick, comment, reorder and move."
+    : " — read and add only."));
+  if(!v.canEdit && v.why){
+    var no = el("span", "no", " " + v.why);
+    el2.appendChild(no);
+  }
+}
+
 function render(){
   var cards = visibleCards();
+  showViewer();
   updateRail();
 
   var shown = cards.length, total = state.cards.length;
@@ -1759,10 +1789,10 @@ function renderBoard(cards){
 
     mine.forEach(function(c){
       var wrap = buildCard(c);
-      if(state.viewer.isSenior && !c.completed) makeDraggable(wrap, c);
+      if(state.viewer.canEdit && !c.completed) makeDraggable(wrap, c);
       col.appendChild(wrap);
     });
-    if(state.viewer.isSenior) makeDropTarget(col, list);
+    if(state.viewer.canEdit) makeDropTarget(col, list);
     board.appendChild(col);
   });
   stage.appendChild(board);
@@ -1897,7 +1927,8 @@ var api = {
                    "Partners, a UK accountancy firm. Tasks on this board are " +
                    "bugs and improvements for it, reported by colleagues.",
           // the preview shows the senior view so the extra controls are visible
-          viewer: { email: "you@tspartners.co.uk", isSenior: true },
+          viewer: { email: "you@example.com", owner: "you@example.com",
+                    isOwner: true, isSenior: true, canEdit: true, why: "" },
           lists: DEMO.lists.map(function(l){
             return {
               id: l.id, title: l.title, colour: l.colour,
@@ -2066,7 +2097,7 @@ function toggleDone(card, cardEl){
   }).catch(function(err){
     card.completed = !wanted;                    // roll back
     render();
-    toast("Could not update that task");
+    toast(String((err && err.message) || err));
     if(window.console) console.error(err);
   });
 }
