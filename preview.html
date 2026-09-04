@@ -1390,12 +1390,13 @@ function undoMove(card, backToTitle){
 function undoToday(card, backToTitle){
   var back = state.lists.filter(function(l){ return l.title === backToTitle; })[0];
   if(!back) return;
-  api.sendToToday && api.isLive()
-    ? google.script.run
-        .withSuccessHandler(function(){ boot(); })
-        .withFailureHandler(function(){ toast("Could not put that back"); })
-        .sendToList(card.listId, card.id, backToTitle)
-    : (moveCardLocally(card, back), render());
+  api.moveToList(card.listId, card.id, backToTitle).then(function(res){
+    if(res && res.success === false) throw new Error(res.error);
+    if(api.isLive()) boot();
+    else { moveCardLocally(card, back); render(); }
+  }).catch(function(err){
+    toast(String((err && err.message) || err));
+  });
 }
 
 function longDate(iso){
@@ -1516,6 +1517,14 @@ function showViewer(){
 }
 
 function render(){
+  // render() rebuilds the whole stage, and runs after every tick, comment and
+  // move. Emptying it collapses the page height, at which point the browser
+  // clamps the scroll position and it cannot be recovered afterwards — so hold
+  // the height while the rebuild happens rather than trying to put it back.
+  var keepY = window.scrollY || window.pageYOffset || 0;
+  var lockTo = stage.offsetHeight;
+  if(lockTo) stage.style.minHeight = lockTo + "px";
+
   var cards = visibleCards();
   showViewer();
   updateRail();
@@ -1540,6 +1549,12 @@ function render(){
   if(state.view === "week") renderWeek();
   else if(state.view === "board") renderBoard(cards);
   else renderWall(cards);
+
+  if(keepY) window.scrollTo(0, keepY);
+  requestAnimationFrame(function(){
+    if(keepY) window.scrollTo(0, keepY);
+    stage.style.minHeight = "";      // release once the new height is real
+  });
 }
 
 function renderWall(cards){
@@ -2427,7 +2442,15 @@ function boot(){
   api.load().then(function(board){
     if(!board || !board.lists){ throw new Error("No lists came back."); }
     ingest(board);
-    applyParams(boot._params);
+    // Only on the first load. boot() runs again after every write, and
+    // re-applying a link's ?lists= or ?q= would wipe out whatever the person
+    // has filtered or searched for since they arrived.
+    if(!boot._paramsDone){
+      applyParams(boot._params);
+      boot._paramsDone = true;
+    }
+    var stale = document.querySelector(".banner");
+    if(stale) stale.parentNode.removeChild(stale);   // boot() runs many times
     if(!api.isLive()){
       var b = el("div", "banner");
       var onScript = inAppsScript();
@@ -2441,12 +2464,18 @@ function boot(){
     }
     render();
   }).catch(function(err){
+    if(window.console) console.error(err);
+    // A refresh after a write failing is not a reason to throw away a board
+    // that is already on screen, along with the filters and scroll position.
+    if(state.cards.length){
+      toast("Could not refresh — showing the last good view");
+      return;
+    }
     stage.textContent = "";
     var m = el("div", "msg error");
     m.appendChild(el("h2", null, "Could not load your tasks"));
     m.appendChild(el("p", null, String((err && err.message) || err)));
     stage.appendChild(m);
-    if(window.console) console.error(err);
   });
 }
 

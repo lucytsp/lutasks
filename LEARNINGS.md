@@ -326,7 +326,60 @@ refused write reports the server's own reason. A permission check that fails
 silently is indistinguishable from a broken feature — which is precisely how it
 was reported.
 
-## 15. Open question I could not settle
+## 15. Four more bugs on the path no test had ever taken
+
+Every failure in this project has had the same shape: a code path that only
+runs against a real backend, while every test ran in demo mode. So I audited
+that boundary deliberately instead of waiting to be told.
+
+The mechanical check came back clean — every function the page calls exists,
+with matching arity, and no helper is called that is not defined. But the
+*logic* that runs after a successful write had four faults, all of them
+invisible in demo mode because demo mode rarely calls `boot()`:
+
+- **A link's filters were re-applied on every write.** `applyParams` ran on
+  each `boot()`, and `boot()` runs after all ten write paths. Arriving via
+  `?lists=SHELVED`, then un-hiding a list, then ticking anything, put the
+  filter straight back. Parameters now apply once, on first load.
+- **A failed refresh blanked a working board.** The catch replaced the whole
+  stage with an error page, losing the board, filters and scroll — for a
+  transient failure on a *refresh*, when a perfectly good board was on screen.
+  It now keeps what is there and says so.
+- **The not-connected banner stacked.** Appended on every `boot()`, so ten
+  writes meant ten banners.
+- **`undoToday` bypassed the api layer**, calling `google.script.run` directly
+  with a meaningless `api.sendToToday &&` guard — so it alone never got the
+  error handling every other call has.
+
+**Lesson.** The bugs were not in the calls. They were in what happens *after*
+a call succeeds — refresh, re-render, re-apply — which is exactly the part a
+faked backend never exercises. Auditing the boundary means auditing both
+sides of it.
+
+## 16. The test lied to me three times in one sitting
+
+Writing the tests for the above:
+
+- **The fake backend's Proxy swallowed its own handlers.** A `get` trap that
+  returns a function for every property also intercepted `run.__ok`, so the
+  stored success handler came back as the catch-all. The page never loaded and
+  the failure looked like an app bug.
+- **The failing-refresh test never triggered a refresh.** It ticked a task,
+  which updates locally and does not call `boot()`. Two assertions passed
+  against a code path that had not run.
+- **The scroll test scrolled the page itself.** Playwright scrolls a target
+  into view before clicking, and `.first()` is the top card — so the test
+  scrolled to the top, then reported that the app had jumped to the top. I
+  "fixed" the app twice before measuring: page height was constant at 1824
+  throughout, and scroll reached 0 *before any render ran*. That measurement
+  took two minutes and would have saved both wrong fixes.
+
+**Lesson.** A failing test is a claim about the system, not a fact. Measure
+what actually happened — heights, timings, call order — before changing the
+code it accuses. Every wrong fix I made this session came from acting on a
+theory I had not yet checked.
+
+## 17. Open question I could not settle
 
 Nothing outstanding on the Tasks API. Everything this board depends on has now
 been checked against the reference rather than recalled.
