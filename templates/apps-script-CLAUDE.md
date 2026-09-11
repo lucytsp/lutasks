@@ -34,6 +34,28 @@ overwritten.
 
 ---
 
+## Setting up on a new machine
+
+Nothing that identifies *which* Apps Script project this is lives in the
+repository, so a fresh clone cannot push anywhere until you rebuild:
+
+```bash
+clasp login
+clasp list                                     # find the project by name
+echo '{"scriptId":"<id>","rootDir":"."}' > .clasp.json
+clasp open                                     # CHECK it opens the right one
+cp Config.example.gs Config.gs                 # then fill it in
+```
+
+For a web app, also recover the deployment id (`clasp deployments`) into
+`.clasp-deployment`, or the next deploy mints a new URL.
+
+`clasp open` before the first push is not optional. An account with several
+Apps Script projects will accept the wrong scriptId without complaint, and
+`clasp push --force` overwrites whatever is there.
+
+---
+
 ## Config split — two rules that break the whole script when broken
 
 **1. Never commit `Config.gs`.** Names, addresses, sheet ids, internal titles.

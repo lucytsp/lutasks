@@ -38,6 +38,37 @@ ended up contradicting each other in an earlier repo.)
 
 ---
 
+## Setting up on a new machine
+
+Three files are deliberately missing from a fresh clone, and none can be
+recovered from the repository:
+
+    .clasp.json          which Apps Script project to push to
+    .clasp-deployment    which deployment to republish over
+    Config.gs            real names, addresses, list titles
+
+Rebuild them:
+
+```bash
+clasp login
+clasp list                                     # find the project by name
+echo '{"scriptId":"<id>","rootDir":"."}' > .clasp.json
+clasp open                                     # CHECK it opens the right one
+clasp deployments                              # copy the AKfycb... id
+echo "<AKfycb...>" > .clasp-deployment
+cp Config.example.gs Config.gs                 # then fill it in
+```
+
+`clasp open` before the first push is not optional. An account with several
+Apps Script projects will happily accept the wrong scriptId, and
+`clasp push --force` overwrites whatever is there. Pushing one project's code
+over another is silent and total.
+
+Without `.clasp-deployment`, `deploy.sh` creates a *new* deployment with a new
+URL rather than republishing the one people already have.
+
+---
+
 ## Config split — two rules that will break things if broken
 
 **1. Never commit `Config.gs`.** It holds colleagues' names, email addresses
