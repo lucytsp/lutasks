@@ -933,7 +933,10 @@ var state = {
   lists: [], people: new Set(), cards: [],
   hidden: new Set(), query: "", showDone: false,
   view: "wall", openId: null, live: false,
-  viewer: { email: "", canEdit: false, why: "" }, context: ""
+  viewer: { email: "", canEdit: false, why: "" }, context: "",
+  // Completed tasks are only fetched when something renders them. Looking
+  // back and Show done are the only two things that do.
+  closedLoaded: false, lookbackDays: 21
 };
 
 /* Preferences persist so the board looks the same every time it opens —
@@ -1015,6 +1018,8 @@ function ingest(board){
   state.lists  = board.lists || [];
   state.viewer = board.viewer || { email: "", canEdit: false, why: "" };
   state.context = board.context || "";
+  state.closedLoaded = !!board.closedIncluded;
+  if(board.lookbackDays) state.lookbackDays = board.lookbackDays;
   state.cards  = [];
   var now = Date.now();
 
@@ -1605,6 +1610,10 @@ function renderWeek(){
   bar.appendChild(el("h2", null, "Looking back"));
   bar.appendChild(el("p", null,
     "Closed work over the last seven days, ending today. Nothing here is outstanding."));
+  if(state.closedLoaded && state.lookbackDays < 28){
+    bar.appendChild(el("p", null,
+      "History reaches back " + state.lookbackDays + " days — raise LOOKBACK_DAYS for more."));
+  }
   shell.appendChild(bar);
 
   var board = el("div", "board");
@@ -1625,7 +1634,8 @@ function renderWeek(){
     col.appendChild(head);
 
     if(!mine.length){
-      col.appendChild(el("p", "day-empty", "Nothing closed."));
+      col.appendChild(el("p", "day-empty",
+        state.closedLoaded ? "Nothing closed." : "Loading…"));
     } else {
       mine.forEach(function(c){ col.appendChild(buildCard(c)); });
     }
@@ -1916,7 +1926,7 @@ var api = {
     return typeof google !== "undefined" && !!(google.script && google.script.run);
   },
 
-  load: function(){
+  load: function(withClosed){
     var self = this;
     return new Promise(function(resolve, reject){
       if(!self.isLive()){
@@ -1965,7 +1975,7 @@ var api = {
       google.script.run
         .withSuccessHandler(resolve)
         .withFailureHandler(function(e){ reject(e); })
-        .getBoard();
+        .getBoard(!!withClosed);
     });
   },
 
@@ -2270,6 +2280,7 @@ document.getElementById("doneToggle").addEventListener("click", function(){
   this.textContent = state.showDone ? "Hide done" : "Show done";
   savePrefs({ showDone: state.showDone });
   render();
+  if(needsClosed()) ensureClosed();
 });
 
 /* ---------- preferences ---------------------------------------------- */
@@ -2361,6 +2372,21 @@ document.getElementById("readToggle").addEventListener("click", function(){
   setEasyRead(this.getAttribute("aria-pressed") !== "true");
 });
 
+/* Switching to a view that shows closed work fetches it once, then keeps it
+   for the rest of the session. */
+function ensureClosed(after){
+  if(state.closedLoaded || !api.isLive()){ if(after) after(); return; }
+  tallyEl.textContent = "Fetching closed tasks…";
+  api.load(true).then(function(board){
+    ingest(board);
+    render();
+  }).catch(function(err){
+    toast("Could not fetch the closed tasks");
+    if(window.console) console.error(err);
+    render();
+  });
+}
+
 var VIEWS = { wall: "viewWall", board: "viewBoard", week: "viewWeek" };
 function setView(view){
   state.view = view;
@@ -2369,6 +2395,7 @@ function setView(view){
   }
   savePrefs({ view: view });
   render();
+  if(needsClosed()) ensureClosed();
 }
 Object.keys(VIEWS).forEach(function(v){
   document.getElementById(VIEWS[v]).addEventListener("click", function(){ setView(v); });
@@ -2438,8 +2465,12 @@ function applyParams(params){
 }
 
 /* ---------- boot ------------------------------------------------------ */
+function needsClosed(){
+  return state.view === "week" || state.showDone;
+}
+
 function boot(){
-  api.load().then(function(board){
+  api.load(needsClosed()).then(function(board){
     if(!board || !board.lists){ throw new Error("No lists came back."); }
     ingest(board);
     // Only on the first load. boot() runs again after every write, and

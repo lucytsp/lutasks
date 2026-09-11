@@ -147,6 +147,9 @@ from one.
 - Repeating tasks **cannot** be moved between lists. It is the one documented
   failure of that call.
 - `due` is a *scheduled date*, not a deadline, and the time is discarded.
+- `completedMin` bounds how far back completed tasks are fetched. What it does
+  with tasks that have *no* completion date is undocumented, so filter on
+  `status` rather than trusting it.
 - Notes cap at 8,192 characters, titles at 1,024. Anything that appends to
   notes must check first.
 - Tasks assigned from Google Docs cannot carry notes at all.

@@ -26,23 +26,54 @@ function doGet() {
  *
  * Limits, for reference: 20,000 non-hidden tasks per list, 100,000 overall.
  */
-function listAllTasks_(listId) {
+function pagedList_(listId, args) {
   const out = [];
   let pageToken = null;
-
   do {
-    const page = Tasks.Tasks.list(listId, {
-      maxResults: 100,
-      showCompleted: true,
-      showHidden: true,
-      showAssigned: true,
-      pageToken: pageToken
-    });
+    args.pageToken = pageToken;
+    args.maxResults = 100;
+    const page = Tasks.Tasks.list(listId, args);
     if (page.items) out.push.apply(out, page.items);
     pageToken = page.nextPageToken;
   } while (pageToken);
-
   return out;
+}
+
+/**
+ * The open tasks in a list — the only ones the board shows by default.
+ *
+ * Completed tasks are deliberately excluded. An old list accumulates hundreds
+ * of them, and getBoard() runs again after every tick, comment and move, so
+ * carrying that history on every interaction costs real time for data that is
+ * only rendered in Looking back.
+ */
+function listOpenTasks_(listId) {
+  return pagedList_(listId, { showCompleted: false, showAssigned: true });
+}
+
+/**
+ * Recently closed tasks, fetched only when something actually needs them.
+ *
+ * completedMin filters by completion date. Whatever it does with tasks that
+ * have no completion date is not documented, so the result is filtered on
+ * status here rather than trusted.
+ */
+function listClosedTasks_(listId, sinceIso) {
+  return pagedList_(listId, {
+    showCompleted: true,
+    showHidden: true,
+    showAssigned: true,
+    completedMin: sinceIso
+  }).filter(function (t) { return t.status === 'completed'; });
+}
+
+/** Every task in a list, open and closed. Kept for one-off use. */
+function listAllTasks_(listId) {
+  return pagedList_(listId, {
+    showCompleted: true,
+    showHidden: true,
+    showAssigned: true
+  });
 }
 
 /**
@@ -198,12 +229,24 @@ function orderedLists_(available) {
   return out;
 }
 
-function getBoard() {
+/**
+ * The board. Open tasks always; recently closed ones only when asked for,
+ * which is when Looking back or Show done is on.
+ */
+function getBoard(includeClosed) {
   const available = Tasks.Tasklists.list({ maxResults: 100 }).items || [];
+
+  let since = null;
+  if (includeClosed) {
+    const days = CONFIG.LOOKBACK_DAYS || 21;
+    since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+  }
 
   const lists = orderedLists_(available).map(function (cfg) {
     const id = cfg.id;
-    const tasks = listAllTasks_(id).map(function (t) { return toCard_(t, id); });
+    const raw = listOpenTasks_(id);
+    if (since) raw.push.apply(raw, listClosedTasks_(id, since));
+    const tasks = raw.map(function (t) { return toCard_(t, id); });
     // position is an opaque lexicographic string, and it is what the Google
     // Tasks app orders by — so sort on it rather than on fetch order.
     tasks.sort(function (a, b) {
@@ -217,6 +260,8 @@ function getBoard() {
     people: CONFIG.PEOPLE,
     context: CONFIG.CLAUDE_CONTEXT || '',
     viewer: viewer_(),
+    closedIncluded: !!includeClosed,
+    lookbackDays: CONFIG.LOOKBACK_DAYS || 21,
     fetchedAt: new Date().toISOString()
   };
 }

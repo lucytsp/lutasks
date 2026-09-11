@@ -65,6 +65,11 @@ const CONFIG = {
     'alex', 'sam', 'jordan', 'priya', 'chris', 'robin'
   ],
 
+  // How far back Looking back and Show done reach. Completed tasks are not
+  // fetched at all until one of those is opened, so this only costs anything
+  // when you actually look. Raise it if you want a longer history.
+  LOOKBACK_DAYS: 21,
+
   // Used for the date on a new task and on a closing note.
   TIMEZONE: 'Europe/London',
 

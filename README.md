@@ -320,12 +320,24 @@ Checked against the `tasks.list` and `tasks.move` reference pages.
   back to where they came from.
 - **`position`, `parent`, `hidden` and `links` are all read-only.**
 
+## Completed tasks are fetched only when something shows them
+
+The board loads **open tasks only**. `getBoard()` runs again after every tick,
+comment and move, and an old list carries hundreds of completed tasks that are
+never rendered on the Wall — carrying that history on every interaction costs
+real time for data nobody is looking at.
+
+Looking back and Show done are the only two things that render closed work.
+Opening either fetches them once, bounded by `CONFIG.LOOKBACK_DAYS` (21 by
+default) via `completedMin`, and keeps them for the rest of the session. A
+refresh from those views keeps including them; a refresh from the Wall does not.
+
+Whatever `completedMin` does with tasks that have no completion date is not
+documented, so `listClosedTasks_` filters on `status` rather than trusting it.
+
 ### Worth doing later
 
-`tasks.list` accepts `completedMin` / `completedMax`, so the Week view could
-ask for just the last five days of completions instead of filtering the whole
-board client-side. Also `dueMin` / `dueMax` and `updatedMin` for incremental
-polling.
+`dueMin` / `dueMax` and `updatedMin` would allow incremental polling.
 
 ## Files
 
