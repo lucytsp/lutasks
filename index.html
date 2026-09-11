@@ -242,6 +242,9 @@ button{background:none;border:0;cursor:pointer}
 .chip-filter[aria-pressed="true"]{background:var(--surface);color:var(--ink);border-color:var(--ink-faint)}
 .chip-filter[aria-pressed="false"]{opacity:.42}
 .rail-sep{width:1px;height:20px;background:var(--line);margin:0 4px}
+.chip-bulk{color:var(--ink-muted)}
+.chip-bulk:disabled{opacity:.35;cursor:default}
+.chip-bulk:disabled:hover{color:var(--ink-muted)}
 
 /* ---------- wall (masonry) ------------------------------------------- */
 .wall{
@@ -435,6 +438,18 @@ button{background:none;border:0;cursor:pointer}
 .week-head .date{
   font-family:var(--font-mono);font-size:10.5px;color:var(--ink-faint);
   margin-left:7px;
+}
+.week-nav{display:flex;align-items:center;gap:8px;margin-left:4px}
+.week-step{
+  width:24px;height:22px;border-radius:6px;border:1px solid var(--line);
+  color:var(--ink-muted);font-size:12px;line-height:1;
+  transition:border-color .15s,color .15s;
+}
+.week-step:hover:not(:disabled){border-color:var(--ink-faint);color:var(--ink)}
+.week-step:disabled{opacity:.3;cursor:default}
+.week-range{
+  font-family:var(--font-mono);font-size:11px;color:var(--ink-muted);
+  min-width:110px;text-align:center;font-variant-numeric:tabular-nums;
 }
 .week-head.today h2{color:var(--accent)}
 .week-head.today .date{color:var(--accent)}
@@ -939,7 +954,7 @@ function el(tag, cls, text){
 var state = {
   lists: [], people: new Set(), cards: [],
   hidden: new Set(), query: "", showDone: false,
-  view: "wall", openId: null, live: false,
+  view: "wall", openId: null, live: false, weekOffset: 0,
   viewer: { email: "", canEdit: false, why: "" }, context: "",
   // Completed tasks are only fetched when something renders them. Looking
   // back and Show done are the only two things that do.
@@ -1580,15 +1595,41 @@ function renderWall(cards){
 /* Seven consecutive days ending on today, oldest first — so the week reads
    left to right the way a diary does, and today is where it stops. Weekends
    are included: an empty Saturday is information too. */
-function lastSevenDays(){
+/* offset 0 is the week ending today; -1 the seven days before that. */
+function sevenDaysAt(offset){
   var out = [], d = new Date();
   d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() - 6);
+  d.setDate(d.getDate() - 6 + (offset * 7));
   for(var i = 0; i < 7; i++){
     out.push(new Date(d));
     d.setDate(d.getDate() + 1);
   }
   return out;
+}
+
+/* How many days of history the chosen week needs, with a little margin. */
+function daysNeededFor(offset){
+  return Math.abs(offset) * 7 + 10;
+}
+
+function stepWeek(by){
+  var next = Math.min(0, state.weekOffset + by);
+  if(next === state.weekOffset) return;
+  state.weekOffset = next;
+  var need = daysNeededFor(next);
+  if(api.isLive() && need > state.lookbackDays){
+    tallyEl.textContent = "Fetching older weeks…";
+    api.load(true, need).then(function(board){
+      ingest(board);
+      render();
+    }).catch(function(err){
+      toast("Could not fetch that far back");
+      if(window.console) console.error(err);
+      render();
+    });
+    return;
+  }
+  render();
 }
 
 function renderWeek(){
@@ -1609,18 +1650,36 @@ function renderWeek(){
     (byDay[key] = byDay[key] || []).push(c);
   });
 
-  var days = lastSevenDays();
+  var days = sevenDaysAt(state.weekOffset);
   var todayKey = new Date().toDateString();
+
+  var first = days[0], last = days[6];
+  var range = first.getDate() + " " + MONTHS[first.getMonth()] + " – " +
+              last.getDate() + " " + MONTHS[last.getMonth()];
 
   var shell = el("div", "lookback");
   var bar = el("div", "lookback-bar");
   bar.appendChild(el("h2", null, "Looking back"));
-  bar.appendChild(el("p", null,
-    "Closed work over the last seven days, ending today. Nothing here is outstanding."));
-  if(state.closedLoaded && state.lookbackDays < 28){
-    bar.appendChild(el("p", null,
-      "History reaches back " + state.lookbackDays + " days — raise LOOKBACK_DAYS for more."));
-  }
+
+  var nav = el("div", "week-nav");
+  var back = el("button", "week-step", "\u00AB");
+  back.type = "button";
+  back.setAttribute("aria-label", "The week before this one");
+  back.addEventListener("click", function(){ stepWeek(-1); });
+  var fwd = el("button", "week-step", "\u00BB");
+  fwd.type = "button";
+  fwd.setAttribute("aria-label", "The week after this one");
+  fwd.disabled = state.weekOffset >= 0;
+  fwd.addEventListener("click", function(){ stepWeek(1); });
+  nav.appendChild(back);
+  nav.appendChild(el("span", "week-range", range));
+  nav.appendChild(fwd);
+  bar.appendChild(nav);
+
+  bar.appendChild(el("p", null, state.weekOffset === 0
+    ? "Closed work over the last seven days, ending today."
+    : "Closed work, " + Math.abs(state.weekOffset) +
+      (Math.abs(state.weekOffset) === 1 ? " week" : " weeks") + " ago."));
   shell.appendChild(bar);
 
   var board = el("div", "board");
@@ -1652,9 +1711,16 @@ function renderWeek(){
   shell.appendChild(board);
   stage.appendChild(shell);
 
-  var total = closed.length;
-  tallyEl.textContent = total === 1 ? "1 task closed in the last seven days"
-                                    : total + " tasks closed in the last seven days";
+  // Count only the days on screen. byDay holds every closed task that has been
+  // fetched, which is several weeks of them once you have paged back.
+  var shown = {};
+  days.forEach(function(d){ shown[d.toDateString()] = true; });
+  var total = closed.filter(function(c){
+    var t = Date.parse(c.completedAt);
+    return !isNaN(t) && shown[new Date(t).toDateString()];
+  }).length;
+  tallyEl.textContent = (total === 1 ? "1 task closed " : total + " tasks closed ") +
+    (state.weekOffset === 0 ? "in the last seven days" : "that week");
 }
 
 /* ---------- dragging to reorder --------------------------------------- *
@@ -1913,14 +1979,22 @@ function updateRail(){
     railEl.appendChild(b);
   });
 
-  if(state.hidden.size){
-    railEl.appendChild(el("span", "rail-sep"));
-    var clear = el("button", "chip-filter", "Show all lists");
-    clear.type = "button";
-    clear.setAttribute("aria-pressed", "true");
-    clear.addEventListener("click", function(){ state.hidden.clear(); render(); });
-    railEl.appendChild(clear);
-  }
+  railEl.appendChild(el("span", "rail-sep"));
+
+  var all = el("button", "chip-filter chip-bulk", "Show all");
+  all.type = "button";
+  all.disabled = state.hidden.size === 0;
+  all.addEventListener("click", function(){ state.hidden.clear(); render(); });
+  railEl.appendChild(all);
+
+  var none = el("button", "chip-filter chip-bulk", "Show none");
+  none.type = "button";
+  none.disabled = state.hidden.size === state.lists.length;
+  none.addEventListener("click", function(){
+    state.lists.forEach(function(l){ state.hidden.add(l.id); });
+    render();
+  });
+  railEl.appendChild(none);
 }
 
 /* ---------- backend --------------------------------------------------- */
@@ -1933,7 +2007,7 @@ var api = {
     return typeof google !== "undefined" && !!(google.script && google.script.run);
   },
 
-  load: function(withClosed){
+  load: function(withClosed, sinceDays){
     var self = this;
     return new Promise(function(resolve, reject){
       if(!self.isLive()){
@@ -1982,7 +2056,7 @@ var api = {
       google.script.run
         .withSuccessHandler(resolve)
         .withFailureHandler(function(e){ reject(e); })
-        .getBoard(!!withClosed);
+        .getBoard(!!withClosed, sinceDays || 0);
     });
   },
 
@@ -2400,6 +2474,7 @@ function setView(view){
   for(var v in VIEWS){
     document.getElementById(VIEWS[v]).setAttribute("aria-pressed", v === view ? "true" : "false");
   }
+  if(view !== "week") state.weekOffset = 0;
   savePrefs({ view: view });
   render();
   if(needsClosed()) ensureClosed();

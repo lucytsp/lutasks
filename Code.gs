@@ -233,12 +233,14 @@ function orderedLists_(available) {
  * The board. Open tasks always; recently closed ones only when asked for,
  * which is when Looking back or Show done is on.
  */
-function getBoard(includeClosed) {
+function getBoard(includeClosed, sinceDays) {
   const available = Tasks.Tasklists.list({ maxResults: 100 }).items || [];
 
-  let since = null;
+  let days = 0, since = null;
   if (includeClosed) {
-    const days = CONFIG.LOOKBACK_DAYS || 21;
+    // Paging back through Looking back asks for a wider window than the
+    // default, so the caller can widen it rather than hitting empty columns.
+    days = Math.max(CONFIG.LOOKBACK_DAYS || 21, sinceDays || 0);
     since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
   }
 
@@ -261,7 +263,7 @@ function getBoard(includeClosed) {
     context: CONFIG.CLAUDE_CONTEXT || '',
     viewer: viewer_(),
     closedIncluded: !!includeClosed,
-    lookbackDays: CONFIG.LOOKBACK_DAYS || 21,
+    lookbackDays: days || (CONFIG.LOOKBACK_DAYS || 21),
     fetchedAt: new Date().toISOString()
   };
 }
