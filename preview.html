@@ -646,8 +646,8 @@ button{background:none;border:0;cursor:pointer}
           <button id="viewWeek" class="seg-back" aria-pressed="false">Looking back</button>
         </div>
         <div class="pop-wrap">
-          <button class="btn" id="displayBtn" aria-expanded="false" aria-controls="displayPop">Display</button>
-          <div class="pop" id="displayPop" hidden>
+          <button class="btn" id="settingsBtn" aria-expanded="false" aria-controls="settingsPop">Settings</button>
+          <div class="pop" id="settingsPop" hidden>
             <div>
               <p class="pop-label">Typeface</p>
               <div class="pop-list" id="typeList"></div>
@@ -2334,17 +2334,17 @@ Array.prototype.forEach.call(document.querySelectorAll("#themeSeg button"), func
   b.addEventListener("click", function(){ setTheme(b.dataset.theme); });
 });
 
-var displayBtn = document.getElementById("displayBtn");
-var displayPop = document.getElementById("displayPop");
+var settingsBtn = document.getElementById("settingsBtn");
+var settingsPop = document.getElementById("settingsPop");
 function setPop(open){
-  displayPop.hidden = !open;
-  displayBtn.setAttribute("aria-expanded", open ? "true" : "false");
+  settingsPop.hidden = !open;
+  settingsBtn.setAttribute("aria-expanded", open ? "true" : "false");
 }
-displayBtn.addEventListener("click", function(ev){
+settingsBtn.addEventListener("click", function(ev){
   ev.stopPropagation();
-  setPop(displayPop.hidden);
+  setPop(settingsPop.hidden);
 });
-displayPop.addEventListener("click", function(ev){ ev.stopPropagation(); });
+settingsPop.addEventListener("click", function(ev){ ev.stopPropagation(); });
 document.addEventListener("click", function(){ setPop(false); });
 
 function setEasyRead(on, remember){
@@ -2376,7 +2376,7 @@ Object.keys(VIEWS).forEach(function(v){
 
 document.addEventListener("keydown", function(ev){
   if(ev.key === "Escape"){
-    if(!displayPop.hidden){ setPop(false); displayBtn.focus(); }
+    if(!settingsPop.hidden){ setPop(false); settingsBtn.focus(); }
     else if(sheet.classList.contains("open")) closeSheet();
     else if(state.openId){ openCard(state.openId); }
   }

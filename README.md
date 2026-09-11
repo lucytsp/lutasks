@@ -99,7 +99,7 @@ returns an **empty string** for viewers outside the deploying account's domain,
 and sometimes inside it. Gating writes on it alone leaves the buttons visible
 and silently refusing — which is exactly what happened here.
 
-The **Display** panel now names who the board thinks you are and what you may
+The **Settings** panel now names who the board thinks you are and what you may
 do, and a refused write reports the server's actual reason rather than a
 generic "could not". A permission failure should never be a mystery.
 
@@ -221,7 +221,7 @@ version, so redeploy over the existing deployment rather than creating one.
 
 ## Typefaces
 
-Five pairings, picked from the **Display** menu and remembered per browser:
+Five pairings, picked from the **Settings** menu and remembered per browser:
 **Ledger** (Newsreader over Public Sans, the default), **Notebook** (Fraunces
 over Source Sans 3), **Grotesque** (Archivo over IBM Plex Sans), **Editorial**
 (Instrument Serif over Instrument Sans) and **Plain** (Public Sans throughout).
