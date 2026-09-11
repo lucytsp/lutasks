@@ -65,6 +65,9 @@ const CONFIG = {
     'alex', 'sam', 'jordan', 'priya', 'chris', 'robin'
   ],
 
+  // Used for the date on a new task and on a closing note.
+  TIMEZONE: 'Europe/London',
+
   // Appended to every "Ask Claude" brief so a conversation starts with the
   // standing context instead of you retyping it. Keep it to a sentence or two.
   CLAUDE_CONTEXT:
